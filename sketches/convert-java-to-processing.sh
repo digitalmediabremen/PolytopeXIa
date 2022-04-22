@@ -37,7 +37,7 @@ SKETCHNAME=$(echo $FILENAME | sed -e 's/.java//')
 # SKETCHNAME=$(echo $SKETCHNAME | sed -e 's/Sketch//')
 SKETCHFILE_NAME="$SKETCHNAME.pde"
 
-echo "# sketch '"$SKETCHNAME"'"
+echo "# generateed sketch '"$SKETCHNAME"'"
 
 mkdir -p $SKETCHNAME
 
