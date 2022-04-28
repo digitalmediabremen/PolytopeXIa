@@ -42,17 +42,23 @@ public class ReflectBeam extends PApplet {
         line_to(mRay.origin, mRay.direction);
 
         if (mSuccess) {
-            PVector mTempRay = new PVector(mRay.direction.x, mRay.direction.y, mRay.direction.z).normalize();
-            PVector mTempNormal = new PVector(mTriangle.normal.x, mTriangle.normal.y, mTriangle.normal.z).normalize();
+            PVector mTempRay = new PVector().set(mRay.direction).normalize();
+            PVector mTempNormal = new PVector().set(mTriangle.normal).normalize();
             float mDot = PVector.dot(mTempRay, mTempNormal);
             boolean mForwardFacing = mDot < 0.0f || IGNORE_CULLING;
             if (mForwardFacing) {
                 separateComponents(mRay.direction, mTriangle.normal, mReflectedRay);
 
-                /* draw reflected ray */
-                noFill();
-                stroke(0, 0, 255);
-                line_to(mIntersectionPoint, mReflectedRay);
+                /* see if ray passed plane */
+                final float mIntersectLength = PVector.sub(mIntersectionPoint, mRay.origin).magSq();
+                final float mRayLength = mRay.direction.magSq();
+
+                if (mIntersectLength < mRayLength) {
+                    /* draw reflected ray */
+                    noFill();
+                    stroke(0, 0, 255);
+                    line_to(mIntersectionPoint, mReflectedRay);
+                }
 
                 /* draw ray beyond ray vector */
                 stroke(255, 0, 0);
