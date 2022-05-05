@@ -23,7 +23,7 @@ email: dennis.paul@hfk-bremen.de
 description: >- # this means to ignore newlines until "baseurl:"
   developer diary for the Polytop XIa project.
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "https://digitalmediabremen.github.io/PolytopeXIa/" # the base hostname & protocol for your site, e.g. http://example.com
+url: "https://digitalmediabremen.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: DM_BREMEN
 github_username:  digitalmediabremen
 
