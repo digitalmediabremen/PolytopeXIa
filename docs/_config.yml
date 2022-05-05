@@ -23,8 +23,8 @@ email: dennis.paul@hfk-bremen.de
 description: >- # this means to ignore newlines until "baseurl:"
   developer diary for the Polytop XIa project.
 domain: digitalmediabremen.github.io
+url: "https://digitalmediabremen.github.io/PolytopeXIa/" 
 baseurl: "/PolytopeXIa/"
-url: "https://digitalmediabremen.github.io" 
 twitter_username: DM_BREMEN
 github_username:  digitalmediabremen
 
