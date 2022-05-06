@@ -31,13 +31,15 @@ github_username:  digitalmediabremen
 # Build settings
 theme: minima
 show_excerpts: true
-future: false
 
 plugins:
   - jekyll-feed
 
 minima:
   date_format: "%Y%m%d"
+
+include:
+  - _pages
 
 # Exclude from processing.
 # The following items will not be processed, by default.
