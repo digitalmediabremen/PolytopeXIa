@@ -1,6 +1,6 @@
 # Polytope XIa
 
-find a *developer blog* under https://digitalmediabremen.github.io/PolytopeXIa/
+see *developer blog* at https://digitalmediabremen.github.io/PolytopeXIa/
 
 ## how to convert a java sketches to processing
 
