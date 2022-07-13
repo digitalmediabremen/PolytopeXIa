@@ -2,10 +2,12 @@ import teilchen.*;
 
 static final int GRID_X = 6;
 static final int GRID_Y = 4;
-Ray mRay;
+static final int NUM_RAYS = 5;
+ArrayList<Ray> mRays;
 ArrayList<Mirror> mMirrors;
 int mSelectedMirrorID_X;
 int mSelectedMirrorID_Y;
+int mSelectedRayID;
 
 void settings() {
     size(1024, 768, P3D);
@@ -14,7 +16,13 @@ void settings() {
 void setup() {
     mSelectedMirrorID_X = 0;
     mSelectedMirrorID_Y = 0;
-    mRay = new Ray();
+    mSelectedRayID = 0;
+    mRays = new ArrayList();
+    for (int i = 0; i < NUM_RAYS; i++) {
+        final Ray mRay = new Ray();
+        mRay.origin.set(width / 2.0f, height / 2.0f);
+        mRays.add(mRay);
+    }
     mMirrors = new ArrayList();
     for (int i = 0; i < GRID_X * GRID_Y; i++) {
         final int x = i % GRID_X;
@@ -32,7 +40,16 @@ void setup() {
 
 void draw() {
     handleKeyPressed();
+    /* update mirror rotation */
+    for (Mirror mMirror : mMirrors) {
+        mMirror.update(1.0f / frameRate);
+    }
+    Ray mSelectedRay = mRays.get(mSelectedRayID);
+    PVector mMousePointer = new PVector(mouseX, mouseY);
+    PVector.sub(mMousePointer, mSelectedRay.origin, mSelectedRay.direction);
+    /* draw */
     background(255);
+    /* draw mirrors */
     noFill();
     stroke(0);
     for (Mirror mMirror : mMirrors) {
@@ -45,16 +62,21 @@ void draw() {
     noFill();
     stroke(0);
     circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, mSelectedMirror.get_width() + 8);
-    /* draw ray */
-    mRay.origin.set(width / 2.0f, height / 2.0f);
-    PVector mMousePointer = new PVector(mouseX, mouseY);
-    PVector.sub(mMousePointer, mRay.origin, mRay.direction);
-    /* draw initial ray */
-    noFill();
-    stroke(0);
-    line_to(mRay.origin, mRay.direction);
-    /* reflect and draw rays */
-    PVector mPreviousRayOrigin = new PVector();
+    for (Ray mRay : mRays) {
+        /* draw initial ray */
+        noFill();
+        stroke(0);
+        line_to(mRay.origin, mRay.direction);
+        castRay(mRay);
+    }
+}
+
+void castRay(Ray pRay) {
+    /* reflect and draw ray */
+    final Ray mRay = new Ray();
+    mRay.origin.set(pRay.origin);
+    mRay.direction.set(pRay.direction);
+    final PVector mPreviousRayOrigin = new PVector();
     mPreviousRayOrigin.set(mRay.origin);
     while (reflect(mRay.origin, mRay.direction)) {
         noFill();
@@ -122,6 +144,17 @@ boolean reflect(PVector pRayOrigin, PVector pRayDirection) {
     }
 }
 
+void mousePressed() {
+    if (mouseButton == LEFT) {
+        mSelectedRayID++;
+        mSelectedRayID %= NUM_RAYS;
+    } else if (mouseButton == RIGHT) {
+        Ray mSelectedRay = mRays.get(mSelectedRayID);
+        PVector mMousePointer = new PVector(mouseX, mouseY);
+        mSelectedRay.origin.set(mMousePointer);
+    }
+}
+
 void keyPressed() {
     switch (keyCode) {
     case LEFT:
@@ -143,6 +176,59 @@ void keyPressed() {
         mSelectedMirrorID_Y %= GRID_Y;
         break;
     }
+    final int mSelectedMirrorID = mSelectedMirrorID_X + mSelectedMirrorID_Y * GRID_X;
+    final Mirror mSelectedMirror = mMirrors.get(mSelectedMirrorID);
+    switch (key) {
+    case 'R':
+        {
+            for (Mirror mMirror : mMirrors) {
+                final int mSign = random(0, 1) > 0.5f ? 1 : -1;
+                final float mSpeed = random(PI * 0.1f, PI * 0.5f) * mSign;
+                mMirror.set_rotation_speed(mSpeed);
+            }
+        }
+        break;
+    case 'r':
+        {
+            final int mSign = random(0, 1) > 0.5f ? 1 : -1;
+            final float mSpeed = random(PI * 0.1f, PI * 0.5f) * mSign;
+            mSelectedMirror.set_rotation_speed(mSpeed);
+        }
+        break;
+    case 'S':
+        for (Mirror mMirror : mMirrors) {
+            mMirror.set_rotation_speed(0);
+        }
+        break;
+    case 's':
+        mSelectedMirror.set_rotation_speed(0.0f);
+        break;
+    case 'A':
+        {
+            final int mSign = random(0, 1) > 0.5f ? 1 : -1;
+            final float mSpeed = random(PI * 0.01f, PI * 0.1f) * mSign;
+            for (Mirror mMirror : mMirrors) {
+                mMirror.set_rotation_speed(mSpeed);
+            }
+        }
+        break;
+    case 'X':
+        {
+            for (Mirror mMirror : mMirrors) {
+                mMirror.set_rotation(0);
+            }
+        }
+        break;
+    case 'c':
+        mSelectedRayID--;
+        mSelectedRayID += NUM_RAYS;
+        mSelectedRayID %= NUM_RAYS;
+        break;
+    case 'v':
+        mSelectedRayID++;
+        mSelectedRayID %= NUM_RAYS;
+        break;
+    }
 }
 
 void line(PVector a, PVector b) {
@@ -161,12 +247,14 @@ static class Mirror {
     final PVector mPosition;
     float mRotation;
     float mWidth;
+    float mRotationSpeed;
     boolean mBothSidesReflect = true;
 
     Mirror() {
         mPosition = new PVector();
         mReflectedRay = new PVector();
         mRotation = 0.0f;
+        mRotationSpeed = 0.0f;
         mWidth = 50.0f;
         mTriangleA = new Triangle();
         mTriangleB = new Triangle();
@@ -226,7 +314,7 @@ static class Mirror {
 
     void set_position(PVector pPosition) {
         mPosition.set(pPosition);
-        update();
+        update_triangles();
     }
 
     PVector get_position() {
@@ -235,12 +323,12 @@ static class Mirror {
 
     void set_width(float pWidth) {
         mWidth = pWidth;
-        update();
+        update_triangles();
     }
 
     void set_rotation(float pRotation) {
         mRotation = pRotation;
-        update();
+        update_triangles();
     }
 
     float get_rotation() {
@@ -251,7 +339,18 @@ static class Mirror {
         return mWidth;
     }
 
-    void update() {
+    void update(float pDelta) {
+        if (mRotationSpeed != 0) {
+            mRotation += mRotationSpeed * pDelta;
+            update_triangles();
+        }
+    }
+
+    void set_rotation_speed(float pRotationSpeed) {
+        mRotationSpeed = pRotationSpeed;
+    }
+
+    void update_triangles() {
         PVector d = new PVector(sin(mRotation), cos(mRotation));
         PVector.mult(d, mWidth * 0.5f, mTriangleA.p0).add(mPosition);
         PVector.mult(d, mWidth * -0.5f, mTriangleA.p1).add(mPosition);
