@@ -10,4 +10,4 @@ navigate to sketch folder ( i.e `./PolytopeXIa/sketches` ) and run shell script 
 ./convert-java-to-processing.sh ../src/de/hfkbremen/polytopexia/sketches/LaserBeamLogo.java
 ```
 
-note that you might need to manually add libraries in the processing editor ( e.g `import teilchen.*;` ).
+note that you might need to manually add libraries in the processing editor ( e.g `import teilchen.*;` or `import.gewebe.*;` ( from https://github.com/dennisppaul/gewebe ) ).

@@ -16,12 +16,17 @@ public class GridMirrors extends PApplet {
     private int mSelectedMirrorID_X;
     private int mSelectedMirrorID_Y;
     private int mSelectedRayID;
+    private static final boolean DRAW_SCENE_3D = false;
 
     public void settings() {
         size(1024, 768, P3D);
     }
 
     public void setup() {
+        if (DRAW_SCENE_3D) {
+            new gewebe.ArcBall(this);
+        }
+
         mSelectedMirrorID_X = 0;
         mSelectedMirrorID_Y = 0;
         mSelectedRayID = 0;
@@ -369,8 +374,17 @@ public class GridMirrors extends PApplet {
             mTriangleB.p0.set(mTriangleA.p0);
             mTriangleB.p1.set(mTriangleA.p1);
             /* a triangle is not valid if 2 points are in the exact same position */
-            mTriangleA.p2.set(mTriangleA.p1.x, mTriangleA.p1.y, -10);
-            mTriangleB.p2.set(mTriangleB.p0.x, mTriangleB.p0.y, -10);
+            mTriangleA.p2.set(mTriangleA.p1.x, mTriangleA.p1.y, -mWidth);
+            mTriangleB.p2.set(mTriangleB.p0.x, mTriangleB.p0.y, -mWidth);
+            mTriangleB.p1.z = -mWidth;
+            /* move halfway up */
+            final float mTranslate = mWidth * 0.5f;
+            mTriangleA.p0.z += mTranslate;
+            mTriangleA.p1.z += mTranslate;
+            mTriangleA.p2.z += mTranslate;
+            mTriangleB.p0.z += mTranslate;
+            mTriangleB.p1.z += mTranslate;
+            mTriangleB.p2.z += mTranslate;
             teilchen.util.Util.calculateNormal(mTriangleA.p0, mTriangleA.p1, mTriangleA.p2, mTriangleA.normal);
             teilchen.util.Util.calculateNormal(mTriangleB.p0, mTriangleB.p1, mTriangleB.p2, mTriangleB.normal);
         }
@@ -398,11 +412,19 @@ public class GridMirrors extends PApplet {
         }
 
         private void line(PGraphics g, PVector a, PVector b) {
-            g.line(a.x, a.y, b.x, b.y);
+            if (DRAW_SCENE_3D) {
+                g.line(a.x, a.y, a.z, b.x, b.y, b.z);
+            } else {
+                g.line(a.x, a.y, b.x, b.y);
+            }
         }
 
         private void line_to(PGraphics g, PVector a, PVector b) {
-            g.line(a.x, a.y, a.x + b.x, a.y + b.y);
+            if (DRAW_SCENE_3D) {
+                g.line(a.x, a.y, a.z, a.x + b.x, a.y + b.y, a.z + b.z);
+            } else {
+                g.line(a.x, a.y, a.x + b.x, a.y + b.y);
+            }
         }
     }
 
