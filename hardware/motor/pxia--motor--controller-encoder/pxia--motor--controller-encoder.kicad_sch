@@ -424,7 +424,7 @@
     (uuid 7da78911-dd6f-4bbd-9a74-8a3476ec1fb5)
   )
   (text "mounting holes aligned to SMCI12 PCB mounting holes.\n22MM hole could also be reduced to 5MM shaft diameter."
-    (at 153.67 127 0)
+    (at 185.42 123.19 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid a3e4599d-c1fd-499c-b939-69e72c6b1fee)
   )
