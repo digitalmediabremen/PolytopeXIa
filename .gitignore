@@ -8,3 +8,7 @@ application.windows32
 application.windows64
 application.macosx
 out
+hardware/motor/pxia--motor--controller-encoder/pxia--motor--controller-encoder-backups/
+hardware/motor/pxia--motor--device-controller/pxia--motor--device-controller-backups/
+hardware/motor/pxia--motor--host-device/pxia--motor--host-device-backups/
+*.kicad_sch-bak
