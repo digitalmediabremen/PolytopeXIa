@@ -42,3 +42,6 @@
      ...
 ```
 
+## layout sketched
+
+![motor-host-device](./motor-host-device.jpeg)

@@ -1453,6 +1453,11 @@
     (effects (font (size 1.27 1.27)) (justify right bottom))
     (uuid 33382cc2-393e-474d-9bce-ba78829ff4ba)
   )
+  (text "TODO\n\n- [x] map out all pins ( done via IDC connector )\n-﻿ [ ] https://jlcpcb.com/partdetail/745082-R_RJ45S08PB200/C707452\n- [x] add terminals for power supply \n- [x] add footprint for higher capacitor"
+    (at 228.6 77.47 0)
+    (effects (font (size 2.54 2.54)) (justify left bottom))
+    (uuid 36cd765a-f621-46fc-9b88-d90e333169eb)
+  )
   (text "SMCI12\nX11(JST-PHD)" (at 41.91 73.66 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 3a0372bf-d0df-46e3-a896-f4276385d64a)
