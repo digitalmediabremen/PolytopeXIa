@@ -1,3 +1,4 @@
 (sym_lib_table
   (lib (name "MAX3490EESA+T")(type "Legacy")(uri "${KIPRJMOD}/library/symbols/2022-08-04_11-33-11.lib")(options "")(descr ""))
+  (lib (name "PicoW")(type "KiCad")(uri "${KIPRJMOD}/library/symbols/RPi_Pico.kicad_sym")(options "")(descr ""))
 )
