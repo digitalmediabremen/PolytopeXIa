@@ -1,16 +1,18 @@
 import processing.javafx.*;
-import apache.ObjectUtils;
 
 import teilchen.*;
 
 ArrayList<Renderable> mMirrors;
 Rotatable mSelectedMirror;
+Renderable mSelectedRenderable;
+
 int mSelectedRayID;
 Constellation mConstellation;
 int old_width = 0;
 int old_height = 0;
 float vw, vh;
 Rotatable mDraggedRotatable;
+Rotatable mPreviousDraggedRotatable;
 
 void settings() {
   size(1024, 768, FX2D);
@@ -41,9 +43,13 @@ void draw() {
     }
   }
   PVector mMousePointer = new PVector(mouseX, mouseY);
-  Renderable mSelectedRenderable = mConstellation.find_closest(mMousePointer);
-  if (mSelectedRenderable instanceof Rotatable) mSelectedMirror = (Rotatable)mSelectedRenderable;
-  else mSelectedMirror = null;
+  Renderable mClosestRenderable = mConstellation.find_closest(mMousePointer);
+  if (mClosestRenderable instanceof Rotatable) {
+    mSelectedMirror = (Rotatable)mClosestRenderable;
+    mSelectedRenderable = mClosestRenderable;
+  } else if (mClosestRenderable != null) {
+    mSelectedRenderable = mClosestRenderable;
+  } else mSelectedMirror = null;
   /* draw */
   background(255);
   /* draw mirrors */
@@ -55,9 +61,19 @@ void draw() {
     mMirror.draw(g);
   }
   /* highlight selected mirror */
-  Rotatable highlighted = ObjectUtils.firstNonNull(mSelectedMirror, mDraggedRotatable);
-  if (highlighted != null) {
-    PVector mSelectedMirrorPosition = highlighted.get_position();
+  if (mDraggedRotatable != null) {
+    PVector mSelectedMirrorPosition = mDraggedRotatable.get_position();
+    noFill();
+    strokeWeight(20);
+    stroke(200);
+    line(mDraggedRotatable.get_position().x, mDraggedRotatable.get_position().y, mouseX, mouseY);
+    strokeWeight(1);
+    stroke(0);
+
+    circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * vw);
+  }
+  if (mSelectedMirror != null) {
+    PVector mSelectedMirrorPosition = mSelectedMirror.get_position();
     noFill();
     stroke(0);
     circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * vw);
@@ -106,11 +122,18 @@ float angle(PVector v1, PVector v2) {
 
 
 void mouseReleased() {
-  if (mSelectedMirror != null && mDraggedRotatable != null) {
-    PVector direction = PVector.sub(mDraggedRotatable.get_position(), mSelectedMirror.get_position());
+  if (mSelectedRenderable != null && mDraggedRotatable != null) {
+
+    PVector direction = PVector.sub(mDraggedRotatable.get_position(), mSelectedRenderable.get_position());
     float heading = angle(direction, PVector.fromAngle(PI));
-    mDraggedRotatable.set_rotation(heading);
+    float diff = 0;
+    if (mPreviousDraggedRotatable != null && mDraggedRotatable instanceof Mirror) {
+      PVector previousDirection = PVector.sub( mDraggedRotatable.get_position(), mPreviousDraggedRotatable.get_position());
+      diff = angle(direction, previousDirection);
+    }
+    mDraggedRotatable.set_rotation(heading - diff / 2);
   }
+  mPreviousDraggedRotatable = mDraggedRotatable;
   mDraggedRotatable = null;
 }
 
