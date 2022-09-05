@@ -2,7 +2,7 @@ interface Renderable {
   public void draw(PGraphics g);
   public PVector get_position();
   public void set_position(PVector position);
-}  
+}
 
 interface Rotatable extends Renderable {
   void set_rotation(float pRotation);
@@ -19,7 +19,7 @@ static class Triangle {
   final PVector p2 = new PVector();
 }
 
-static class Pole implements Renderable {
+class Pole implements Renderable {
   final PVector mPosition;
 
   Pole() {
@@ -28,7 +28,9 @@ static class Pole implements Renderable {
 
   void draw(PGraphics g) {
     //g.rect(mPosition.x - 5, mPosition.y- 5, 10,10);
-    g.circle(mPosition.x, mPosition.y, 2);
+    g.fill(200, 200, 200);
+    g.noStroke();
+    g.rect(mPosition.x - .5f * vw, mPosition.y - .5f * vw, 1 * vw, 1 * vw);
   }
 
   void set_position(PVector pPosition) {
@@ -40,7 +42,7 @@ static class Pole implements Renderable {
   }
 }
 
-static class Mirror implements Renderable, Rotatable {
+class Mirror implements Renderable, Rotatable {
   final Triangle mTriangleA;
   final Triangle mTriangleB;
   final PVector mIntersectionPoint;
@@ -63,6 +65,10 @@ static class Mirror implements Renderable, Rotatable {
   }
 
   void draw(PGraphics g) {
+    g.fill(255, 0, 255, 100);
+    g.noStroke();
+    
+    g.rect(mPosition.x - 1f * vw, mPosition.y - 1f * vw, 2 * vw, 2 * vw);
     draw_triangle(g, mTriangleA);
     draw_triangle(g, mTriangleB);
   }
@@ -83,20 +89,20 @@ static class Mirror implements Renderable, Rotatable {
     boolean mSuccess;
     PVector mNormal = null;
     /* triangle a */
-    mSuccess = teilchen.util.Intersection.intersectRayTriangle(mRay.origin, 
-      mRay.direction, 
-      mTriangleA.p0, 
-      mTriangleA.p1, 
-      mTriangleA.p2, 
+    mSuccess = teilchen.util.Intersection.intersectRayTriangle(mRay.origin,
+      mRay.direction,
+      mTriangleA.p0,
+      mTriangleA.p1,
+      mTriangleA.p2,
       mIntersectionPoint);
     mNormal = mTriangleA.normal;
     /* triangle b -- test both triangles */
     if (!mSuccess) {
-      mSuccess = teilchen.util.Intersection.intersectRayTriangle(mRay.origin, 
-        mRay.direction, 
-        mTriangleB.p0, 
-        mTriangleB.p1, 
-        mTriangleB.p2, 
+      mSuccess = teilchen.util.Intersection.intersectRayTriangle(mRay.origin,
+        mRay.direction,
+        mTriangleB.p0,
+        mTriangleB.p1,
+        mTriangleB.p2,
         mIntersectionPoint);
       mNormal = mTriangleB.normal;
     }

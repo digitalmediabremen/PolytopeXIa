@@ -9,11 +9,11 @@ static final int layout_height = 6;
 //  "   MC CM " + 
 //  "     M   ";
 static final String layout = 
-  "    M    " +
-  "  MC CM  " +
-  "   MKMKM " +
-  "  MKMKM  " +
-  "   MC CM " + 
+  "   M     " +
+  " CM MKM  " +
+  " M C M K " +
+  " K M C M " +
+  "  MKM MC " + 
   "     M   ";
 static final int x_padding = 50;
 

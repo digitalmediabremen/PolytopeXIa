@@ -8,6 +8,7 @@ int mSelectedRayID;
 Constellation mConstellation;
 int old_width = 0;
 int old_height = 0;
+float vw, vh;
 
 void settings() {
   size(1024, 768, FX2D);
@@ -19,6 +20,15 @@ void setup() {
   mConstellation = new Constellation(mMirrors);
   old_width = width;
   old_height = height;
+  vw = width / 100f;
+  vh = height / 100f;
+}
+
+void handleResize() {
+  vw = width / 100f;
+  vh = height / 100f;
+      mConstellation.update();
+
 }
 
 void draw() {
@@ -48,10 +58,10 @@ void draw() {
     PVector mSelectedMirrorPosition = mSelectedMirror.get_position();
     noFill();
     stroke(0);
-    circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 30);
+    circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * vw);
   }
   if (old_width != width || old_height != height) {
-    mConstellation.update();
+    handleResize();
   }
 }
 
