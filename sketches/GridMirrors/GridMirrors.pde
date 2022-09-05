@@ -1,4 +1,5 @@
 import processing.javafx.*;
+import apache.ObjectUtils;
 
 import teilchen.*;
 
@@ -9,6 +10,7 @@ Constellation mConstellation;
 int old_width = 0;
 int old_height = 0;
 float vw, vh;
+Rotatable mDraggedRotatable;
 
 void settings() {
   size(1024, 768, FX2D);
@@ -27,15 +29,14 @@ void setup() {
 void handleResize() {
   vw = width / 100f;
   vh = height / 100f;
-      mConstellation.update();
-
+  mConstellation.update();
 }
 
 void draw() {
   handleKeyPressed();
   /* update mirror rotation */
   for (Renderable mMirror : mMirrors) {
-    if (mMirror instanceof Rotatable) {    
+    if (mMirror instanceof Rotatable) {
       ((Rotatable)mMirror).update(1.0f / frameRate);
     }
   }
@@ -49,13 +50,14 @@ void draw() {
   noFill();
   stroke(0);
   fill(0);
-  text(frameRate, 20,20);
+  text(frameRate, 20, 20);
   for (Renderable mMirror : mMirrors) {
     mMirror.draw(g);
   }
   /* highlight selected mirror */
-  if (mSelectedMirror != null) {
-    PVector mSelectedMirrorPosition = mSelectedMirror.get_position();
+  Rotatable highlighted = ObjectUtils.firstNonNull(mSelectedMirror, mDraggedRotatable);
+  if (highlighted != null) {
+    PVector mSelectedMirrorPosition = highlighted.get_position();
     noFill();
     stroke(0);
     circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * vw);
@@ -91,6 +93,26 @@ void handleKeyPressed() {
 //    mSelectedRay.origin.set(mMousePointer);
 //  }
 //}
+
+void mousePressed() {
+  mDraggedRotatable = mSelectedMirror;
+}
+
+float angle(PVector v1, PVector v2) {
+  float a = atan2(v2.y, v2.x) - atan2(v1.y, v1.x);
+  if (a < 0) a += TWO_PI;
+  return a;
+}
+
+
+void mouseReleased() {
+  if (mSelectedMirror != null && mDraggedRotatable != null) {
+    PVector direction = PVector.sub(mDraggedRotatable.get_position(), mSelectedMirror.get_position());
+    float heading = angle(direction, PVector.fromAngle(PI));
+    mDraggedRotatable.set_rotation(heading);
+  }
+  mDraggedRotatable = null;
+}
 
 void keyPressed() {
   switch (key) {
