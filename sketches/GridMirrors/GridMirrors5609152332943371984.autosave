@@ -27,7 +27,7 @@ void draw() {
   for (Renderable mMirror : mMirrors) {
     if (mMirror instanceof Rotatable) {    
       ((Rotatable)mMirror).update(1.0f / frameRate);
-    }
+    }i
   }
   PVector mMousePointer = new PVector(mouseX, mouseY);
   Renderable mSelectedRenderable = mConstellation.find_closest(mMousePointer);
@@ -66,7 +66,7 @@ void handleKeyPressed() {
       break;
     case 'w':
       mSelectedMirror.set_rotation(mSelectedMirror.get_rotation() - mMirrorRotationStep);
-      break;
+      break;x
     }
   }
 }
