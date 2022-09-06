@@ -50,7 +50,7 @@ class Constellation {
       if (update) {
         if (c == 'M') {
           Mirror mMirror = (Mirror)mGrid.get(i);
-          mMirror.set_width(unit_from_meters(0.2));
+          mMirror.set_width(unit_from_meters(0.25));
         }
         update_at_position(i, pos);
       } else if (c == 'M') {
@@ -80,7 +80,7 @@ class Constellation {
     Mirror mMirror = new Mirror();
     mMirror.set_position(position);
     mMirror.set_rotation(random(TWO_PI));
-    mMirror.set_width(unit_from_meters(0.2));
+    mMirror.set_width(unit_from_meters(0.25));
     mMirror.set_both_sides_reflect(true);
     mMirrors.add(mMirror);
     mGrid.add(mMirror);

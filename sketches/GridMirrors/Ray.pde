@@ -30,7 +30,7 @@ static class Ray implements Renderable {
     final PVector mPreviousRayOrigin = new PVector();
     mPreviousRayOrigin.set(mRay.origin);
     int depthCounter = 0;
-    while (pConstellation.reflect(mRay.origin, mRay.direction) && depthCounter < 10) {
+    while (pConstellation.reflect(mRay.origin, mRay.direction) && depthCounter < 15) {
       g.noFill();
       g.stroke(255, 0, 0);
       this.line(g, mRay.origin, mPreviousRayOrigin);

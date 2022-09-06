@@ -2,6 +2,8 @@ import processing.javafx.*;
 
 import teilchen.*;
 
+//https://discourse.processing.org/t/accurate-event-timer/14260/2
+//https://stackoverflow.com/questions/13582395/sharing-a-variable-between-multiple-different-threads
 ArrayList<Renderable> mMirrors;
 Rotatable mSelectedMirror;
 Renderable mSelectedRenderable;
@@ -49,7 +51,10 @@ void draw() {
     mSelectedRenderable = mClosestRenderable;
   } else if (mClosestRenderable != null) {
     mSelectedRenderable = mClosestRenderable;
-  } else mSelectedMirror = null;
+  } else {
+    mSelectedMirror = null;
+    mSelectedRenderable = null;
+  }
   /* draw */
   background(255);
   /* draw mirrors */
@@ -57,21 +62,32 @@ void draw() {
   stroke(0);
   fill(0);
   text(frameRate, 20, 20);
-  for (Renderable mMirror : mMirrors) {
-    mMirror.draw(g);
+  for (Renderable mRenderables : mMirrors) {
+    mRenderables.draw(g);
+  }
+  if (mPreviousDraggedRotatable != null && mDraggedRotatable instanceof Mirror) {
+    noFill();
+    stroke(240, 240, 240);
+    strokeWeight(2 * vw);
+    line(mPreviousDraggedRotatable.get_position().x, mPreviousDraggedRotatable.get_position().y, mDraggedRotatable.get_position().x, mDraggedRotatable.get_position().y);
+    strokeWeight(1);
   }
   /* highlight selected mirror */
   if (mDraggedRotatable != null) {
     PVector mSelectedMirrorPosition = mDraggedRotatable.get_position();
     noFill();
-    strokeWeight(20);
-    stroke(200);
-    line(mDraggedRotatable.get_position().x, mDraggedRotatable.get_position().y, mouseX, mouseY);
+    strokeWeight(vw * 2);
+    stroke(200, 200, 200);
+    if (mSelectedRenderable != null) {
+      line(mDraggedRotatable.get_position().x, mDraggedRotatable.get_position().y, mSelectedRenderable.get_position().x, mSelectedRenderable.get_position().y);
+    } else {
+      line(mDraggedRotatable.get_position().x, mDraggedRotatable.get_position().y, mouseX, mouseY);
+    }
     strokeWeight(1);
     stroke(0);
-
     circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * vw);
   }
+
   if (mSelectedMirror != null) {
     PVector mSelectedMirrorPosition = mSelectedMirror.get_position();
     noFill();
@@ -122,7 +138,7 @@ float angle(PVector v1, PVector v2) {
 
 
 void mouseReleased() {
-  if (mSelectedRenderable != null && mDraggedRotatable != null) {
+  if (mSelectedRenderable != null && mDraggedRotatable != null && mDraggedRotatable != mSelectedRenderable) {
 
     PVector direction = PVector.sub(mDraggedRotatable.get_position(), mSelectedRenderable.get_position());
     float heading = angle(direction, PVector.fromAngle(PI));
@@ -133,6 +149,7 @@ void mouseReleased() {
     }
     mDraggedRotatable.set_rotation(heading - diff / 2);
   }
+
   mPreviousDraggedRotatable = mDraggedRotatable;
   mDraggedRotatable = null;
 }
