@@ -1,0 +1,10 @@
+Designator,Footprint,Quantity,Value,LCSC Part #
+"H1, H2, H3, H4",MountingHole_3.2mm_M3,4,M3,DNF
+"J1, J5",RJ45_OST_PJ012-8P8CX_Vertical,2,RJ45,C305983
+J2,PinSocket_1x16_P2.54mm_Vertical,1,Lolin D32 Pro 2.0.0 (ESP32) PIN17–32,DNF
+J3,Molex_Nano-Fit_105313-xx04_1x04_P2.50mm_Horizontal,1,GENERIC_UART,DNF
+J4,PinSocket_1x16_P2.54mm_Vertical,1,Lolin D32 Pro 2.0.0 (ESP32) PIN01–16,DNF
+"R1, R2",R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,2,120R,C114244
+U1,Teensy40,1,Teensy4.0,DNF
+U2,SOIC-8_3.9x4.9mm_P1.27mm,1,max3490eesa+T,C23404
+U3,RPi_PicoW_SMD_TH,1,PicoW,DNF
