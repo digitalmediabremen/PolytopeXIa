@@ -11,3 +11,5 @@ navigate to sketch folder ( i.e `./PolytopeXIa/sketches` ) and run shell script 
 ```
 
 note that you might need to manually add libraries in the processing editor ( e.g `import teilchen.*;` or `import.gewebe.*;` ( from https://github.com/dennisppaul/gewebe ) ).
+
+## See osc.schema.md for a list of commands
