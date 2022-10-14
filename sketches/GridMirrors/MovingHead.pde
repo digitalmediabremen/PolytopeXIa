@@ -1,5 +1,6 @@
+
 final static int num_rays = 12;
-class MovingHead implements Rotatable {
+static class MovingHead implements Rotatable {
   final PVector mPosition;
   float mRotation;
   float mRotationSpeed;
@@ -11,6 +12,8 @@ class MovingHead implements Rotatable {
     mRotationSpeed = 0.0f;
     mRays = new ArrayList();
     initRays(c);
+    ArtNetClient artnet = new ArtNetClient();
+
   }
 
   private void initRays(Constellation c) {
@@ -50,7 +53,8 @@ class MovingHead implements Rotatable {
     mRotationSpeed = pRotationSpeed;
   }
 
-  void draw(PGraphics g) {
+  void draw(RenderContext rc) {
+    final PGraphics g = rc.g();
     final PVector d = new PVector(sin(mRotation + HALF_PI), cos(mRotation + HALF_PI));
     final PVector p = PVector.mult(d, 20 * 0.5f).add(mPosition);
     g.pushMatrix();
@@ -60,11 +64,11 @@ class MovingHead implements Rotatable {
     g.translate(mPosition.x, mPosition.y);
     g.stroke(0,180,0);
     g.fill(0,180,0,20);
-    g.circle(0,0,4 * vw);
+    g.circle(0,0,4 * rc.vw());
     g.stroke(0);
     g.noFill();
     g.rotate(-mRotation);
-    g.rect(0 - vw, 0 - .5f * vw, 2 * vw, vw);
+    g.rect(0 - rc.vw(), 0 - .5f * rc.vw(), 2 * rc.vw(), rc.vw());
     g.popMatrix();
     //g.line(mPosition.x, mPosition.y, p.x, p.y);
   }

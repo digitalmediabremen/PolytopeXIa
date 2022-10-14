@@ -1,56 +1,93 @@
 
-static final int layout_width = 9;
-static final int layout_height = 6;
-//static final String layout = 
+static final int layout_width = 10;
+static final int layout_height = 5;
+//static final String layout =
 //  "    M    " +
 //  "  MC CM  " +
 //  "   MKMKM " +
 //  "  MKMKM  " +
-//  "   MC CM " + 
+//  "   MC CM " +
 //  "     M   ";
-static final String layout = 
-  "   M     " +
-  " CM MKM  " +
-  " M C M K " +
-  " K M C M " +
-  "  MKM MC " + 
-  "     M   ";
-static final int x_padding = 50;
 
-float unit_from_meters(float u) {
-  return u / ((layout_width - 1) * 3) * (width - (x_padding * 2));
-}
+//static final String layout =
+//  "   M     " +
+//  " CM MKM  " +
+//  " M C M K " +
+//  " K M C M " +
+//  "  MKM MC " +
+//  "     M   ";
+
+static final String layout =
+  "--M----M--" +
+  "MC-M-M----" +
+  "--MC--CM--" +
+  "----M-M-CM" +
+  "--M----M--";
+  
+//static final String layout =
+//  "---M----M-" +
+//  "-C--M-C--M" +
+//  "--M-MM-M--" +
+//  "M--C-M--C-" +
+//  "-M----M---";
+
+//static final String layout =
+//  "X--XMMX--X" +
+//  "--M-M-MC--" +
+//  "XM--CC--MX" +
+//  "--CM-M-M--" +
+//  "-X-XMMX--X";
 
 
-class Constellation {
+static final float mirror_diameter = 0.25f;
+
+ class Constellation {
 
   final ArrayList<Renderable> mMirrors;
   final ArrayList<Renderable> mGrid;
+  final RenderContext rc;
+  float paddingX, paddingY, constellationWidth, constellationHeight;
 
-  Constellation(ArrayList<Renderable> mirrors) {
+
+  Constellation(ArrayList<Renderable> mirrors, RenderContext rc) {
     this.mMirrors = mirrors;
     this.mGrid = new ArrayList();
+    this.rc = rc;
+    update_dimensions();
     create_from_layout(false);
   }
 
+  public void update_dimensions() {
+    paddingX = 2 * rc.vw();
+    constellationWidth = (100 - 2 * 2) * rc.vw();
+    constellationHeight = constellationWidth * (layout_height / (float) layout_width);
+    paddingY = (100 * rc.vh() - constellationHeight) / 2f;
+  }
+
+
   //returns normalized positions between 0 - 1;
-  public void update() {
+  public void update(RenderContext rc) {
+    update_dimensions();
     create_from_layout(true);
+  }
+
+  float unit_from_meters(float u) {
+    return u / ((layout_width - 1) * 3) * (rc.w() - (paddingX * 2));
   }
 
   private void create_from_layout(boolean update) {
     for (int i = 0; i < layout.length(); i++) {
       final char c = layout.charAt(i);
-      final PVector padding = new PVector(x_padding, (height - (layout_height / (float) layout_width) * (float) (width - x_padding * 3)) * 0.5);
+      // normalized 0 - 1 coords
       final float x = (i % layout_width) / (float) (layout_width - 1);
-      final float y = (i / layout_width) / (float) (layout_width - 1);
+      final float y = (i / layout_width) / (float) (layout_height - 1);
 
       //adjust to screen coords
-      final PVector pos = PVector.add(padding, new PVector(x, y).mult(width - (padding.x * 2)));
+      final PVector pos = new PVector(x * constellationWidth, y * constellationHeight).add(paddingX, paddingY);
       if (update) {
         if (c == 'M') {
           Mirror mMirror = (Mirror)mGrid.get(i);
-          mMirror.set_width(unit_from_meters(0.25));
+          mMirror.set_width(unit_from_meters(mirror_diameter));
         }
         update_at_position(i, pos);
       } else if (c == 'M') {
@@ -61,8 +98,8 @@ class Constellation {
         p.set_position(pos);
         mMirrors.add(p);
         mGrid.add(p);
-      } else {
-        Pole p = new Pole();
+      } else if (c == '-' || c == 'X') {
+        Pole p = new Pole(c == 'X');
         p.set_position(pos);
         mMirrors.add(p);
         mGrid.add(p);
@@ -79,8 +116,8 @@ class Constellation {
   private void add_mirror_at_position(PVector position) {
     Mirror mMirror = new Mirror();
     mMirror.set_position(position);
-    mMirror.set_rotation(random(TWO_PI));
-    mMirror.set_width(unit_from_meters(0.25));
+    mMirror.set_rotation(0);
+    mMirror.set_width(unit_from_meters(mirror_diameter));
     mMirror.set_both_sides_reflect(true);
     mMirrors.add(mMirror);
     mGrid.add(mMirror);

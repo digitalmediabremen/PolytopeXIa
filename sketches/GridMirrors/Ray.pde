@@ -7,11 +7,11 @@ static class Ray implements Renderable {
      pConstellation = c;
   }
 
-  void draw(PGraphics g) {
-    g.noFill();
-    g.stroke(255,0,0);
-    line_to(g, origin, direction);
-    castRay(g, this);
+  void draw(RenderContext rc) {
+    rc.g().noFill();
+    rc.g().stroke(255,0,0);
+    line_to(rc.g(), origin, direction);
+    castRay(rc.g(), this);
   }
 
   void line(PGraphics g, PVector a, PVector b) {

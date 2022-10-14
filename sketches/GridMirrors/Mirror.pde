@@ -1,5 +1,5 @@
 interface Renderable {
-  public void draw(PGraphics g);
+  public void draw(RenderContext rc);
   public PVector get_position();
   public void set_position(PVector position);
 }
@@ -19,18 +19,21 @@ static class Triangle {
   final PVector p2 = new PVector();
 }
 
-class Pole implements Renderable {
+static class Pole implements Renderable {
   final PVector mPosition;
+  final boolean mBlocked;
 
-  Pole() {
+  Pole(boolean blocked) {
     mPosition = new PVector();
+    mBlocked = blocked;
   }
 
-  void draw(PGraphics g) {
+  void draw(RenderContext rc) {
     //g.rect(mPosition.x - 5, mPosition.y- 5, 10,10);
-    g.fill(200, 200, 200);
-    g.noStroke();
-    g.rect(mPosition.x - .5f * vw, mPosition.y - .5f * vw, 1 * vw, 1 * vw);
+    if (mBlocked) rc.g().fill(100, 100, 100);
+    else rc.g().fill(200, 200, 200);
+    rc.g().noStroke();
+    rc.g().rect(mPosition.x - .5f * rc.vw(), mPosition.y - .5f * rc.vw(), 1 * rc.vw(), 1 * rc.vw());
   }
 
   void set_position(PVector pPosition) {
@@ -52,6 +55,7 @@ class Mirror implements Renderable, Rotatable {
   float mWidth;
   float mRotationSpeed;
   boolean mBothSidesReflect = true;
+  PVector mIncomingRayDirection;
 
   Mirror() {
     mPosition = new PVector();
@@ -64,11 +68,15 @@ class Mirror implements Renderable, Rotatable {
     mIntersectionPoint = new PVector();
   }
 
-  void draw(PGraphics g) {
+  void draw(RenderContext rc) {
+    final PGraphics g = rc.g();
     g.fill(255, 0, 255, 100);
     g.noStroke();
-    
-    g.rect(mPosition.x - 1f * vw, mPosition.y - 1f * vw, 2 * vw, 2 * vw);
+
+    g.rect(mPosition.x - 1f * rc.vw(), mPosition.y - 1f * rc.vw(), 2 * rc.vw(), 2 * rc.vw());
+    if (mIncomingRayDirection != null) {
+      g.line(mPosition.x, mPosition.y, mPosition.x + mIncomingRayDirection.x * rc.vw() * 4, mPosition.y + mIncomingRayDirection.y * rc.vw() * 4);
+    }
     draw_triangle(g, mTriangleA);
     draw_triangle(g, mTriangleB);
   }
@@ -146,11 +154,27 @@ class Mirror implements Renderable, Rotatable {
     return mWidth;
   }
 
+
+  float angle(PVector v1, PVector v2) {
+    float a = atan2(v2.y, v2.x) - atan2(v1.y, v1.x);
+    if (a < 0) a += TWO_PI;
+    return a;
+  }
+
   void update(float pDelta) {
-    if (mRotationSpeed != 0) {
-      mRotation += mRotationSpeed * pDelta;
-      update_triangles();
+    if (mIncomingRayDirection != null) {
+      float incoming = angle(mIncomingRayDirection, PVector.fromAngle(PI));
+
+      float outgoing = angle(PVector.sub(new PVector(mouseX, mouseY), mPosition), mIncomingRayDirection);
+
+      mRotation = incoming + outgoing * 0.5;
     }
+    //mRotation = angle(PVector.cross(PVector.sub(mPosition, new PVector(mouseX, mouseY)), mIncomingRayDirection), PVector.fromAngle(PI));
+    update_triangles();
+    //if (mRotationSpeed != 0) {
+    //  mRotation += mRotationSpeed * pDelta;
+    //  update_triangles();
+    //}
   }
 
   void set_rotation_speed(float pRotationSpeed) {

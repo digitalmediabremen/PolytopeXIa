@@ -18,14 +18,14 @@ void setup() {
 
 void loop() {  
   /* start motor */
-  digitalWrite(LED_BUILTIN, HIGH);
-  MOTOR_SERIAL.print(CMD_START);
-  delay(500);
-
-  /* stop motor */
-  digitalWrite(LED_BUILTIN, LOW);
-  MOTOR_SERIAL.print(CMD_STOP);
-  delay(500);
+//  digitalWrite(LED_BUILTIN, HIGH);
+//  MOTOR_SERIAL.print(CMD_START);
+//  delay(500);
+//
+//  /* stop motor */
+//  digitalWrite(LED_BUILTIN, LOW);
+//  MOTOR_SERIAL.print(CMD_STOP);
+//  delay(500);
 
   /* print motor response */
   while (MOTOR_SERIAL.available() > 0) {

@@ -1,4 +1,46 @@
+import javax.xml.bind.*;
+import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.adapters.*;
+import javax.xml.bind.attachment.*;
+import javax.xml.bind.helpers.*;
+import javax.xml.bind.util.*;
+import com.sun.istack.*;
+import com.sun.istack.localization.*;
+import com.sun.istack.logging.*;
+import com.sun.xml.bind.*;
+import com.sun.xml.bind.annotation.*;
+import com.sun.xml.bind.api.*;
+import com.sun.xml.bind.api.impl.*;
+import com.sun.xml.bind.marshaller.*;
+import com.sun.xml.bind.unmarshaller.*;
+import com.sun.xml.bind.util.*;
+import com.sun.xml.bind.v2.*;
+import com.sun.xml.bind.v2.model.annotation.*;
+import com.sun.xml.bind.v2.model.core.*;
+import com.sun.xml.bind.v2.model.impl.*;
+import com.sun.xml.bind.v2.model.nav.*;
+import com.sun.xml.bind.v2.model.util.*;
+import com.sun.xml.bind.v2.runtime.*;
+import com.sun.xml.bind.v2.runtime.unmarshaller.*;
+import com.sun.xml.bind.v2.schemagen.episode.*;
+import com.sun.xml.bind.v2.util.*;
+import com.sun.xml.txw2.*;
+import com.sun.xml.txw2.annotation.*;
+import com.sun.xml.txw2.output.*;
+import com.sun.xml.bind.v2.bytecode.*;
+import com.sun.xml.bind.v2.model.runtime.*;
+import com.sun.xml.bind.v2.runtime.output.*;
+import com.sun.xml.bind.v2.runtime.property.*;
+import com.sun.xml.bind.v2.runtime.reflect.*;
+import com.sun.xml.bind.v2.runtime.reflect.opt.*;
+import com.sun.xml.bind.v2.schemagen.*;
+import com.sun.xml.bind.v2.schemagen.xmlschema.*;
+import ch.bildspur.artnet.*;
+import ch.bildspur.artnet.packets.*;
+import ch.bildspur.artnet.events.*;
+
 import processing.javafx.*;
+
 
 import teilchen.*;
 
@@ -12,28 +54,35 @@ int mSelectedRayID;
 Constellation mConstellation;
 int old_width = 0;
 int old_height = 0;
-float vw, vh;
 Rotatable mDraggedRotatable;
 Rotatable mPreviousDraggedRotatable;
+RenderContext rc;
+
+byte[] dmxData = new byte[512];
+ArtNetClient artnet;
+
 
 void settings() {
   size(1024, 768, FX2D);
 }
 
 void setup() {
-  mSelectedRayID = 0;
-  mMirrors = new ArrayList();
-  mConstellation = new Constellation(mMirrors);
   old_width = width;
   old_height = height;
-  vw = width / 100f;
-  vh = height / 100f;
+  mSelectedRayID = 0;
+  mMirrors = new ArrayList();
+  rc = new RenderContext(g, width, height);
+  mConstellation = new Constellation(mMirrors, rc);
+  artnet = new ArtNetClient(null);
+  artnet.start();
+
+
+  //selectOutput("Select a file to process:", "fileSelected");
 }
 
 void handleResize() {
-  vw = width / 100f;
-  vh = height / 100f;
-  mConstellation.update();
+  rc.update(width, height);
+  mConstellation.update(rc);
 }
 
 void draw() {
@@ -44,6 +93,7 @@ void draw() {
       ((Rotatable)mMirror).update(1.0f / frameRate);
     }
   }
+
   PVector mMousePointer = new PVector(mouseX, mouseY);
   Renderable mClosestRenderable = mConstellation.find_closest(mMousePointer);
   if (mClosestRenderable instanceof Rotatable) {
@@ -63,12 +113,12 @@ void draw() {
   fill(0);
   text(frameRate, 20, 20);
   for (Renderable mRenderables : mMirrors) {
-    mRenderables.draw(g);
+    mRenderables.draw(rc);
   }
   if (mPreviousDraggedRotatable != null && mDraggedRotatable instanceof Mirror) {
     noFill();
     stroke(240, 240, 240);
-    strokeWeight(2 * vw);
+    strokeWeight(2 * rc.vw());
     line(mPreviousDraggedRotatable.get_position().x, mPreviousDraggedRotatable.get_position().y, mDraggedRotatable.get_position().x, mDraggedRotatable.get_position().y);
     strokeWeight(1);
   }
@@ -76,7 +126,7 @@ void draw() {
   if (mDraggedRotatable != null) {
     PVector mSelectedMirrorPosition = mDraggedRotatable.get_position();
     noFill();
-    strokeWeight(vw * 2);
+    strokeWeight(rc.vw() * 2);
     stroke(200, 200, 200);
     if (mSelectedRenderable != null) {
       line(mDraggedRotatable.get_position().x, mDraggedRotatable.get_position().y, mSelectedRenderable.get_position().x, mSelectedRenderable.get_position().y);
@@ -85,14 +135,14 @@ void draw() {
     }
     strokeWeight(1);
     stroke(0);
-    circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * vw);
+    circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * rc.vw());
   }
 
   if (mSelectedMirror != null) {
     PVector mSelectedMirrorPosition = mSelectedMirror.get_position();
     noFill();
     stroke(0);
-    circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * vw);
+    circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * rc.vw());
   }
   if (old_width != width || old_height != height) {
     handleResize();
@@ -136,6 +186,14 @@ float angle(PVector v1, PVector v2) {
   return a;
 }
 
+void fileSelected(File selection) {
+  if (selection == null) {
+    println("Window was closed or the user hit cancel.");
+  } else {
+    println("User selected " + selection.getAbsolutePath());
+  }
+}
+
 
 void mouseReleased() {
   if (mSelectedRenderable != null && mDraggedRotatable != null && mDraggedRotatable != mSelectedRenderable) {
@@ -146,6 +204,11 @@ void mouseReleased() {
     if (mPreviousDraggedRotatable != null && mDraggedRotatable instanceof Mirror) {
       PVector previousDirection = PVector.sub( mDraggedRotatable.get_position(), mPreviousDraggedRotatable.get_position());
       diff = angle(direction, previousDirection);
+    }
+    // dragged from moving head on mirror
+    if (mSelectedRenderable instanceof Mirror && mDraggedRotatable instanceof MovingHead) {
+        Mirror m = (Mirror) mSelectedRenderable;
+        m.mIncomingRayDirection = direction.normalize();
     }
     mDraggedRotatable.set_rotation(heading - diff / 2);
   }
