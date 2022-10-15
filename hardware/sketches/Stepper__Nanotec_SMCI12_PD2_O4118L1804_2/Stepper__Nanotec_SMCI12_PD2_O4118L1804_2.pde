@@ -10,6 +10,8 @@ ControlP5 cp5;
 public float motor_max_speed = 0.0346; // umdrehung pro sekunde
 public float motor_speed_exponent = 1;
 public float motor_speed_multiplier = 1;
+  public float motor_speed_position_proportion = 1;
+
 
 void setup() {
   size(1024, 768);
@@ -24,7 +26,7 @@ void setup() {
   cp5.addSlider("motor_max_speed")
     .setPosition(10, 40)
     .setSize(800, 20)
-    .setRange(0, .1)
+    .setRange(0, 0.1)
     ;
 
   cp5.addSlider("motor_speed_multiplier")
@@ -36,6 +38,12 @@ void setup() {
 
   cp5.addSlider("motor_speed_exponent")
     .setPosition(10, 200)
+    .setSize(800, 20)
+    .setRange(0, 2)
+    ;
+
+  cp5.addSlider("motor_speed_position_proportion")
+    .setPosition(10, 280)
     .setSize(800, 20)
     .setRange(0, 2)
     ;
@@ -77,6 +85,7 @@ void draw() {
   mc.motor_max_speed = motor_max_speed;
   mc.motor_speed_exponent = motor_speed_exponent;
   mc.motor_speed_multiplier = motor_speed_multiplier;
+  mc.motor_speed_position_proportion = motor_speed_position_proportion;
 }
 
 

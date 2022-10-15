@@ -17,7 +17,7 @@ static class MotorController extends Thread {
 
   public static final String MOTOR_CMD_PREFIX = "#";
   public static final String MOTOR_CMD_SUFFIX = "\r";
-  public static final String MOTOR_CMD_READ = "Z";
+  public static  final String MOTOR_CMD_READ = "Z";
 
   public static final String MOTOR_CMD_MOTOR_TYPE = ":CL_motor_type"; // 2.5.1
   public static final String MOTOR_CMD_PHASE_CURRENT = "i";           // 2.5.2
@@ -43,6 +43,7 @@ static class MotorController extends Thread {
   public float motor_speed_exponent = 1;
   public float motor_speed_multiplier;
   public float motor_ramp = 3000;
+  public float motor_speed_position_proportion = 1;
 
   public static enum S {
     INIT,
@@ -146,8 +147,10 @@ static class MotorController extends Thread {
   private boolean follow() {
     boolean commandSend = false;
     for (int i = 0; i < NUM_MOTORS; i++) {
+
       if (new_motor_positions[i] != current_motor_positions[i]) {
         commandSend = true;
+        println("position from, to", current_motor_positions[i] * 360, new_motor_positions[i] * 360);
 
 
         float clipped_new_motor_position = Math.max(-1, Math.min(1, new_motor_positions[i]));
@@ -155,14 +158,18 @@ static class MotorController extends Thread {
         float motor_speed_rev_per_second = min(motor_max_speed, (float)Math.pow(Math.abs(motor_position_difference) * 0.5f, motor_speed_exponent) * 2 * motor_speed_multiplier);
         float motor_max_speed_hz = MICRO_STEPS * 16000;
         int motor_speed = Math.round(motor_speed_rev_per_second * motor_max_speed_hz);
-        println("position from, to", current_motor_positions[i] * 360, clipped_new_motor_position * 360);
         println("speed", motor_speed_rev_per_second * 360, motor_speed);
+
         int motor_position_steps = Math.round(clipped_new_motor_position * STEPS_FULL_ROTATION);
         //sendCommand(compileCommand(i + 1, MOTOR_CMD_STOP)); // stop
         sendCommand(compileCommand(i + 1, "o", motor_speed)); // 2.6.9 Maximalfrequenz einstellen
-        sendCommand(compileCommand(i + 1, "s", motor_position_steps));
-        sendCommand(compileCommand(i + 1, MOTOR_CMD_START));
         current_motor_positions[i] = current_motor_positions[i] + (motor_speed_rev_per_second * Math.signum(motor_position_difference));
+        if (Math.abs(current_motor_positions[i] - clipped_new_motor_position) < 0.001) current_motor_positions[i] = clipped_new_motor_position;
+        int motor_position_steps_2 = Math.round(current_motor_positions[i] * motor_speed_position_proportion * STEPS_FULL_ROTATION);
+
+        sendCommand(compileCommand(i + 1, "s", motor_position_steps_2));
+        sendCommand(compileCommand(i + 1, MOTOR_CMD_START));
+
       }
     }
 
@@ -200,13 +207,13 @@ static class MotorController extends Thread {
     sendCommand(compileCommand(":cal_elangle_data", 0)); // 2.5.44 Elektrischen Winkel setzen
 
     //sendCommand(compileCommand("y", 1)); // 2.6.3 Satz aus EEPROM laden
-    //sendCommand(compileCommand("|", 1)); // 2.6.4 Aktuellen Satz auslesen
+    //sendCom mand(compileCommand("|", 1)); // 2.6.4 Aktuellen Satz auslesen
     sendCommand(compileCommand("p", 2)); // 2.6.6 Positionierart setzen
     sendCommand(compileCommand("s", 0)); // 2.6.7 Verfahrweg einstellen **HOW TO DEACTIVATE THIS? with `W`**
-    sendCommand(compileCommand("u", 10)); // 2.6.8 Minimalfrequenz einstellen
+    sendCommand(compileCommand("u", 100)); // 2.6.8 Minimalfrequenz einstellen
     sendCommand(compileCommand("o", 4000)); // 2.6.9 Maximalfrequenz einstellen
-    sendCommand(compileCommand("b", 2000)); // 2.6.11 Beschleunigungsrampe einstellen
-    sendCommand(compileCommand("B", 2000)); // 2.6.12 Bremsrampe einstellen
+    sendCommand(compileCommand("b", 3000)); // 2.6.11 Beschleunigungsrampe einstellen
+    sendCommand(compileCommand("B", 3000)); // 2.6.12 Bremsrampe einstellen
     sendCommand(compileCommand(":b", 0)); // 2.5.36 Ruck für Beschleunigungsrampe einstellen
     sendCommand(compileCommand("H", 0)); // 2.6.13 Halterampe einstellen
     sendCommand(compileCommand(":B", 0)); // 2.6.12 Ruck für Bremsrampe einstellen
