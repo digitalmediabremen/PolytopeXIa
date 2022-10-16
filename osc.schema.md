@@ -24,12 +24,14 @@
 /mirror/global/rotation/xy (x: coord) (y: coord)                  // global set rotation by xy coord in room
 /mirror/rotation/xy (mirror_id: int) (x: coord) (y: coord)        // set rotation by xy coord in room
 
-/mirror/global/rotation/object (object_id: int)                   // global set rotation by object id
-/mirror/rotation/object (mirror_id: int) (object_id: int)         // set rotation by object id
-
 /mirror/reflect/enable (mirror_id: int) (angle_from: angle)       // rotation calculated to reflect light from angle_from to angle or xy
-/mirror/reflect/enable (mirror_id: int) (object_id: int)          // rotation calculated to reflect light from objectId to angle or xy
+/mirror/reflect/enable (mirror_id: int) (x: coord) (y: coord)     // rotation calculated to reflect light from objectId to angle or xy
+/mirror/reflect/enable (mirror_id: int) (x: coord) (y: coord)     // rotation calculated to reflect light from objectId to angle or xy
 /mirror/reflect/disable                                           // disable reflection calculation
+
+/mirror/constellation/ (constellation_string: string)             // C1 D2 E16 
+
+/light/
 ```
 
 ## smartphones
