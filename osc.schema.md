@@ -36,6 +36,10 @@
 
 ## smartphones
 
+/phone/text (int)
+/phone/intensity (float)
+/phone/color (float) (float) (float) (float)
+
 ## led bars
 
 ## beamer
