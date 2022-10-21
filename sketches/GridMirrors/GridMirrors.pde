@@ -60,11 +60,13 @@ int old_height = 0;
 Rotatable mDraggedRotatable;
 Rotatable mPreviousDraggedRotatable;
 RenderContext rc;
-
+boolean[] pressedKeys = new boolean[256];
 
 State state;
 OSCController oscController;
+DMXController dmxController;
 
+boolean shiftPressed = false;
 
 void settings() {
   size(1024, 768, FX2D);
@@ -78,13 +80,19 @@ void setup() {
   rc = new RenderContext(g, width, height);
   mConstellation = new Constellation(mMirrors, rc);
   oscController = new OSCController(mConstellation);
-  new DMXController(mConstellation);
+  dmxController = new DMXController(mConstellation);
+  registerMethod("dispose", this);
 }
 
 void handleResize() {
   rc.update(width, height);
   mConstellation.update(rc);
 }
+
+void dispose() {
+  mConstellation.save();
+}
+
 
 void draw() {
   handleKeyPressed();
@@ -95,6 +103,8 @@ void draw() {
     }
   }
 
+  dmxController.update();
+  oscController.update();
   PVector mMousePointer = new PVector(mouseX, mouseY);
   Renderable mClosestRenderable = mConstellation.find_closest(mMousePointer);
   if (mClosestRenderable instanceof Rotatable) {
@@ -115,11 +125,14 @@ void draw() {
   fill(0);
   text("FR " + round(frameRate), 20, 20);
   if (mSelectedRotatable != null) {
-      text("OFS " + degrees(mSelectedRotatable.get_rotation_offset()), 100, 20);
-
+    text("ROT " + degrees(mSelectedRotatable.get_rotation()), 100, 20);
+    text("ROT-OFS " + degrees(mSelectedRotatable.get_rotation_offset()), 250, 20);
+    if (mSelectedRotatable instanceof MovingHead) {
+      text("TLT-OFS " + degrees(((MovingHead)mSelectedRotatable).get_tilt_offset()), 450, 20);
+    }
   }
 
-  
+
   for (Renderable mRenderables : mMirrors) {
     mRenderables.draw(rc);
   }
@@ -195,6 +208,11 @@ float angle(PVector v1, PVector v2) {
   return a;
 }
 
+float mapAngle(float a) {
+  if (a < 0) a += TWO_PI;
+  return a;
+}
+
 void fileSelected(File selection) {
   if (selection == null) {
     println("Window was closed or the user hit cancel.");
@@ -204,12 +222,23 @@ void fileSelected(File selection) {
 }
 
 void mouseWheel(MouseEvent event) {
-  float factor = 0.1;
-  if (keyCode == SHIFT) factor = 0.001;
-  float e = (float)event.getCount() * factor;
-  if (mSelectedRotatable != null) {
-    mSelectedRotatable.set_rotation_offset(mSelectedRotatable.get_rotation_offset() + e);
+  float factor = 0.001;
+  print(pressedKeys);
+  if (pressedKeys['T']) {
+    if (pressedKeys['C']) factor = 0.01;
+    float e = (float)event.getCount() * factor;
+    if (mSelectedRotatable != null && mSelectedRotatable instanceof MovingHead) {
+      ((MovingHead)mSelectedRotatable).set_tilt_offset(((MovingHead)mSelectedRotatable).get_tilt_offset() + e);
+    }
+  } else {
+    if (pressedKeys['C']) factor = 0.01;
+    float e = (float)event.getCount() * factor;
+    if (mSelectedRotatable != null) {
+      mSelectedRotatable.set_rotation_offset(mSelectedRotatable.get_rotation_offset() + e);
+    }
   }
+
+
   println(event.getCount(), factor);
 }
 
@@ -219,25 +248,39 @@ void mouseReleased() {
 
     PVector direction = PVector.sub(mDraggedRotatable.get_position(), mSelectedRenderable.get_position());
     float heading = angle(direction, PVector.fromAngle(PI));
-    float diff = 0;
-    if (mPreviousDraggedRotatable != null && mDraggedRotatable instanceof Mirror) {
-      PVector previousDirection = PVector.sub( mDraggedRotatable.get_position(), mPreviousDraggedRotatable.get_position());
-      diff = angle(direction, previousDirection);
-    }
     // dragged from moving head on mirror
-    if (mSelectedRenderable instanceof Mirror && mDraggedRotatable instanceof MovingHead) {
+    if (mSelectedRenderable instanceof Mirror && mDraggedRotatable instanceof Rotatable) {
       Mirror m = (Mirror) mSelectedRenderable;
       m.mReflectionSource = direction.normalize();
     }
-    mDraggedRotatable.set_rotation(heading - diff / 2);
+    mDraggedRotatable.set_rotation(heading);
   }
 
   mPreviousDraggedRotatable = mDraggedRotatable;
   mDraggedRotatable = null;
 }
 
+void keyReleased() {
+  if (key < 256) pressedKeys[key] = false;
+}
+
 void keyPressed() {
+  println(key);
+  if (key < 256) pressedKeys[key] = true;
   switch (key) {
+  case '0':
+    {
+      if (mSelectedRotatable != null ) {
+        mSelectedRotatable.set_rotation_offset(0);
+
+        if (mSelectedRotatable instanceof MovingHead) {
+          ((MovingHead)mSelectedRotatable).set_tilt_offset(0);
+        } else if (mSelectedRotatable instanceof Mirror) {
+          ((Mirror)mSelectedRotatable).mReflectionSource = null;
+        }
+      }
+      break;
+    }
   case 'R':
     {
       for (Renderable mRenderable : mMirrors) {

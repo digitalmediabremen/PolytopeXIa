@@ -84,6 +84,11 @@ class Mirror implements Renderable, Rotatable {
     }
     draw_triangle(g, mTriangleA);
     draw_triangle(g, mTriangleB);
+    PVector angle = PVector.fromAngle(mRotation - HALF_PI);
+    stroke(255,0,0);
+    g.line(mPosition.x, mPosition.y, mPosition.x + mTriangleA.normal.x * rc.vw() * 8, mPosition.y + mTriangleA.normal.y * rc.vw() * 8);
+
+
   }
 
   PVector intersection_point() {
@@ -95,7 +100,7 @@ class Mirror implements Renderable, Rotatable {
   }
 
   void setReflectionSourceFromAngle(float angle) {
-    mReflectionSource = PVector.fromAngle(PI + angle);
+    mReflectionSource = PVector.fromAngle(angle - PI);
     update_triangles();
   }
 
@@ -170,11 +175,11 @@ class Mirror implements Renderable, Rotatable {
 
   float get_rotation() {
     if (mReflectionSource != null) {
-      float incoming = angle(mReflectionSource, PVector.fromAngle(PI));
-      //float outgoing = angle(PVector.sub(new PVector(mouseX, mouseY), mPosition), mReflectionSource);
-      return incoming + (mRotation);
+      float diff = mRotation - angle(mReflectionSource, PVector.fromAngle(PI));
+      float a = mRotation - diff / 2 + HALF_PI;
+      if (mRotation < PI) a += PI;
+      return mapAngle(a);
     }
-    //mRotation = angle(PVector.cross(PVector.sub(mPosition, new PVector(mouseX, mouseY)), mIncomingRayDirection), PVector.fromAngle(PI));
     return mRotation;
   }
 

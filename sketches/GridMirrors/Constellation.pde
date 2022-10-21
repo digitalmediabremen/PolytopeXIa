@@ -58,12 +58,14 @@ class Constellation {
     this.rc = rc;
     update_dimensions();
     create_from_layout(false);
+    load();
   }
 
   public void update_dimensions() {
     paddingX = 10 * rc.vw();
     constellationWidth = (100 - 2 * 10) * rc.vw();
-    constellationHeight = constellationWidth * (layout_height / (float) layout_width);
+    println("with", (layout_height - 1) / (float) (layout_width - 1));
+    constellationHeight = constellationWidth * ((layout_height - 1) / (float) (layout_width -1));
     paddingY = (100 * rc.vh() - constellationHeight) / 2f;
   }
 
@@ -93,6 +95,31 @@ class Constellation {
     }
   }
 
+  public void save() {
+    String[] values = new String[12 + 4 * 2];
+    for (int i = 0; i < 12; i++) {
+      values[i] = str(mMirrors[i].get_rotation_offset());
+    }
+    for (int i = 0; i < 4; i++) {
+      values[i + 12] = str(mLights[i].get_rotation_offset());
+      values[i + 12 + 4] = str(mLights[i].get_tilt_offset());
+    }
+    saveStrings("values.dat", values);
+    println("saved");
+  }
+
+  public void load() {
+    String[] values = loadStrings("values.dat");
+    for (int i = 0; i < 12; i++) {
+      mMirrors[i].set_rotation_offset(float(values[i]));
+    }
+    for (int i = 0; i < 4; i++) {
+      mLights[i].set_rotation_offset(float(values[i + 12]));
+      mLights[i].set_tilt_offset(float(values[i + 12 + 4]));
+    }
+    println("values loaded");
+  }
+
   private void create_from_layout(boolean update) {
     String[][] matches = matchAll(layout, "-|M(\\d{1,2})|C(\\d{1,2})");
 
@@ -101,6 +128,7 @@ class Constellation {
       // normalized 0 - 1 coords
       final float x = (i % layout_width) / (float) (layout_width - 1);
       final float y = (i / layout_width) / (float) (layout_height - 1);
+       println(x,y);
       //adjust to screen coords
       final PVector pos = new PVector(x * constellationWidth, y * constellationHeight).add(paddingX, paddingY);
       if (update) {

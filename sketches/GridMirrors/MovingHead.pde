@@ -4,7 +4,8 @@ static class MovingHead implements Rotatable {
   final PVector mPosition;
   float mRotation;
   float mRotationSpeed;
-  float mRotationOffset;
+  float mRotationOffset = PI;
+  float mTiltOffset = 0;
   final ArrayList<Ray> mRays;
 
   MovingHead(Constellation c) {
@@ -42,6 +43,10 @@ static class MovingHead implements Rotatable {
     return mRotation;
   }
 
+  void set_tilt_offset(float pTiltOffset) {
+    mTiltOffset = pTiltOffset;
+  }
+
   void set_rotation_offset(float pRotationOffset) {
     mRotationOffset = pRotationOffset;
     updateRays();
@@ -49,6 +54,10 @@ static class MovingHead implements Rotatable {
 
   float get_rotation_offset() {
     return mRotationOffset;
+  }
+
+  float get_tilt_offset() {
+    return mTiltOffset;
   }
 
 

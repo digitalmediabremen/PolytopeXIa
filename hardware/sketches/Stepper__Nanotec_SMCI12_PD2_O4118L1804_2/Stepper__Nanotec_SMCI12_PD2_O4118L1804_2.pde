@@ -43,6 +43,8 @@ void oscEvent(OscMessage msg) {
   if (msg.checkAddrPattern("/motor/position")==true) {
     /* check if the typetag is the right one. */
     if (msg.checkTypetag("if")) {
+          System.out.println("tes");
+
       int motor_id = msg.get(0).intValue();
       /* parse theOscMessage and extract the values from the osc message arguments. */
       float new_motor_position = msg.get(1).floatValue() / 360f;

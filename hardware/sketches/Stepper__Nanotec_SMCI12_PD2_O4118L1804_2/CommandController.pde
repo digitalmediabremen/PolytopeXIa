@@ -170,7 +170,7 @@ static class CommandController {
       } else if (commandResponse != null) {
         println("didnt match", command, commandResponse);
       }
-      mc.delay(2);
+      mc.delay(1);
     }
   }
 
