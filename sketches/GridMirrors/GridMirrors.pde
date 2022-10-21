@@ -66,6 +66,7 @@ State state;
 OSCController oscController;
 DMXController dmxController;
 
+
 boolean shiftPressed = false;
 
 void settings() {
@@ -131,6 +132,7 @@ void draw() {
       text("TLT-OFS " + degrees(((MovingHead)mSelectedRotatable).get_tilt_offset()), 450, 20);
     }
   }
+  text("DMX: " + (dmxController.disabled ? "DISABLED" : "ENABLED"), 20, 50);
 
 
   for (Renderable mRenderables : mMirrors) {
@@ -256,7 +258,7 @@ void mouseReleased() {
     mDraggedRotatable.set_rotation(heading);
   }
 
-  mPreviousDraggedRotatable = mDraggedRotatable;
+  //mPreviousDraggedRotatable = mDraggedRotatable;
   mDraggedRotatable = null;
 }
 
@@ -265,7 +267,6 @@ void keyReleased() {
 }
 
 void keyPressed() {
-  println(key);
   if (key < 256) pressedKeys[key] = true;
   switch (key) {
   case '0':
@@ -281,47 +282,6 @@ void keyPressed() {
       }
       break;
     }
-  case 'R':
-    {
-      for (Renderable mRenderable : mMirrors) {
-        if (!(mRenderable instanceof Rotatable)) continue;
-        final Rotatable mMirror = (Rotatable)mRenderable;
-        final int mSign = random(0, 1) > 0.5f ? 1 : -1;
-        final float mSpeed = random(PI * 0.01f, PI * 0.1f) * mSign;
-        mMirror.set_rotation_speed(mSpeed);
-      }
-    }
-    break;
-  case 'I':
-    {
-      if (mSelectedRotatable == null) break;
-      final int mSign = random(0, 1) > 0.5f ? 1 : -1;
-      final float mSpeed = random(PI * 0.1f, PI * 0.5f) * mSign;
-      mSelectedRotatable.set_rotation_speed(mSpeed);
-    }
-    break;
-  case 'S':
-    for (Renderable mRenderable : mMirrors) {
-      if (!(mRenderable instanceof Rotatable)) continue;
-      final Rotatable mMirror = (Rotatable)mRenderable;
-      mMirror.set_rotation_speed(0);
-    }
-    break;
-  case 's':
-    if (mSelectedRotatable == null) break;
-    mSelectedRotatable.set_rotation_speed(0.0f);
-    break;
-  case 'A':
-    {
-      final int mSign = random(0, 1) > 0.5f ? 1 : -1;
-      final float mSpeed = random(PI * 0.01f, PI * 0.1f) * mSign;
-      for (Renderable mRenderable : mMirrors) {
-        if (!(mRenderable instanceof Rotatable)) continue;
-        final Rotatable mMirror = (Rotatable)mRenderable;
-        mMirror.set_rotation_speed(mSpeed);
-      }
-    }
-    break;
   case 'X':
     {
       for (Renderable mRenderable : mMirrors) {
@@ -330,6 +290,10 @@ void keyPressed() {
         mMirror.set_rotation(PI / 4);
       }
     }
+    break;
+
+  case 'D':
+    dmxController.disabled = !dmxController.disabled;
     break;
   }
 }

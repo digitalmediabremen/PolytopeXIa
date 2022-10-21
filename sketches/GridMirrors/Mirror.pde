@@ -177,7 +177,7 @@ class Mirror implements Renderable, Rotatable {
     if (mReflectionSource != null) {
       float diff = mRotation - angle(mReflectionSource, PVector.fromAngle(PI));
       float a = mRotation - diff / 2 + HALF_PI;
-      if (mRotation < PI) a += PI;
+      if (mRotation < PI || diff < PI) a += PI;
       return mapAngle(a);
     }
     return mRotation;

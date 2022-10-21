@@ -1,6 +1,6 @@
 
-static final int layout_width = 10;
-static final int layout_height = 5;
+static final int layout_width = 12;
+static final int layout_height = 7;
 //static final String layout =
 //  "    M    " +
 //  "  MC CM  " +
@@ -19,11 +19,11 @@ static final int layout_height = 5;
 
 static final String layout =
   "------------" +
-  "--M1----M2--" +
-  "M3C1-M4-M5----" +
-  "--M6C2--C3M7--" +
-  "----M8-M9-C4M10" +
-  "--M11----M12--" +
+  "---M1----M2---" +
+  "-M3C1-M4-M5-----" +
+  "---M6C2--C3M7---" +
+  "-----M8-M9-C4M10-" +
+  "---M11----M12---" +
   "------------";
 
 
@@ -131,7 +131,6 @@ class Constellation {
       // normalized 0 - 1 coords
       final float x = (i % layout_width) / (float) (layout_width - 1);
       final float y = (i / layout_width) / (float) (layout_height - 1);
-      println(x, y);
       //adjust to screen coords
       final PVector pos = new PVector(x * constellationWidth, y * constellationHeight).add(paddingX, paddingY);
       if (update) {

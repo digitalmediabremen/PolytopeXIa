@@ -5,7 +5,7 @@
 static class OSCController {
   OscP5 oscP5;
   Constellation constellation;
-  NetAddress myRemoteLocation = new NetAddress("127.0.0.1", 8000);
+  NetAddress myRemoteLocation = new NetAddress("10.0.100.3", 8000);
   float[] old = new float[12];
 
 

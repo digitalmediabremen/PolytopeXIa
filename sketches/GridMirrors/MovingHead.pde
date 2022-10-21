@@ -1,5 +1,5 @@
 
-final static int num_rays = 12;
+final static int num_rays = 1;
 static class MovingHead implements Rotatable {
   final PVector mPosition;
   float mRotation;
