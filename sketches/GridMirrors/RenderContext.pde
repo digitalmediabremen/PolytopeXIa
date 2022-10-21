@@ -3,12 +3,17 @@ static class RenderContext {
   private int w, h;
   private PGraphics g;
 
+
   public RenderContext(final PGraphics g, final int w, final int h) {
     this.g = g;
     this.w = w;
     this.h = h;
     update(w, h);
   }
+  
+  //public PVector toCoord(PVector screenCoord) {
+  
+  //}
 
   public void update(final int w, final int h) {
     this.w = w;
@@ -22,7 +27,7 @@ static class RenderContext {
   public int w() {
     return w;
   }
-  
+
   public int h() {
     return h;
   }

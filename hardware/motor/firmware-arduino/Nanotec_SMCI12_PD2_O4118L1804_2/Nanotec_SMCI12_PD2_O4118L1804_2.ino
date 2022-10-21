@@ -5,7 +5,7 @@ String CMD_START = String("#*A\r");
 String CMD_STOP = String("#*S1\r");
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT); 
   digitalWrite(LED_BUILTIN, HIGH);
   
   Serial.begin(115200);
@@ -22,7 +22,7 @@ void loop() {
 //  MOTOR_SERIAL.print(CMD_START);
 //  delay(500);
 //
-//  /* stop motor */
+//  /* stop motor */ 
 //  digitalWrite(LED_BUILTIN, LOW);
 //  MOTOR_SERIAL.print(CMD_STOP);
 //  delay(500);

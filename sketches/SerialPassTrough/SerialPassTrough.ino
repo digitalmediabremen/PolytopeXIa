@@ -56,10 +56,11 @@ void loop() {
     MOTOR_SERIAL.write(Serial.read());
   }
 
-  while (MOTOR_SERIAL.available() > 0) {
+  if (MOTOR_SERIAL.available()) {
     digitalWrite(LED_BUILTIN, HIGH);
     int c = MOTOR_SERIAL.read();
     Serial.write(c);
+  } else {
+    digitalWrite(LED_BUILTIN, LOW);
   }
-  digitalWrite(LED_BUILTIN, LOW);
 }

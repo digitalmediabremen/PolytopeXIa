@@ -1,3 +1,6 @@
+import netP5.*;
+import oscP5.*;
+
 import javax.xml.bind.*;
 import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.*;
@@ -47,7 +50,7 @@ import teilchen.*;
 //https://discourse.processing.org/t/accurate-event-timer/14260/2
 //https://stackoverflow.com/questions/13582395/sharing-a-variable-between-multiple-different-threads
 ArrayList<Renderable> mMirrors;
-Rotatable mSelectedMirror;
+Rotatable mSelectedRotatable;
 Renderable mSelectedRenderable;
 
 int mSelectedRayID;
@@ -58,8 +61,9 @@ Rotatable mDraggedRotatable;
 Rotatable mPreviousDraggedRotatable;
 RenderContext rc;
 
-byte[] dmxData = new byte[512];
-ArtNetClient artnet;
+
+State state;
+OSCController oscController;
 
 
 void settings() {
@@ -73,11 +77,8 @@ void setup() {
   mMirrors = new ArrayList();
   rc = new RenderContext(g, width, height);
   mConstellation = new Constellation(mMirrors, rc);
-  artnet = new ArtNetClient(null);
-  artnet.start();
-
-
-  //selectOutput("Select a file to process:", "fileSelected");
+  oscController = new OSCController(mConstellation);
+  new DMXController(mConstellation);
 }
 
 void handleResize() {
@@ -97,24 +98,32 @@ void draw() {
   PVector mMousePointer = new PVector(mouseX, mouseY);
   Renderable mClosestRenderable = mConstellation.find_closest(mMousePointer);
   if (mClosestRenderable instanceof Rotatable) {
-    mSelectedMirror = (Rotatable)mClosestRenderable;
+    mSelectedRotatable = (Rotatable)mClosestRenderable;
     mSelectedRenderable = mClosestRenderable;
   } else if (mClosestRenderable != null) {
     mSelectedRenderable = mClosestRenderable;
   } else {
-    mSelectedMirror = null;
+    mSelectedRotatable = null;
     mSelectedRenderable = null;
   }
   /* draw */
   background(255);
   /* draw mirrors */
-  noFill();
-  stroke(0);
+
+  textAlign(LEFT, CENTER);
+  textSize(rc.vw() * 1.5);
   fill(0);
-  text(frameRate, 20, 20);
+  text("FR " + round(frameRate), 20, 20);
+  if (mSelectedRotatable != null) {
+      text("OFS " + degrees(mSelectedRotatable.get_rotation_offset()), 100, 20);
+
+  }
+
+  
   for (Renderable mRenderables : mMirrors) {
     mRenderables.draw(rc);
   }
+  mConstellation.draw(rc);
   if (mPreviousDraggedRotatable != null && mDraggedRotatable instanceof Mirror) {
     noFill();
     stroke(240, 240, 240);
@@ -138,8 +147,8 @@ void draw() {
     circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * rc.vw());
   }
 
-  if (mSelectedMirror != null) {
-    PVector mSelectedMirrorPosition = mSelectedMirror.get_position();
+  if (mSelectedRotatable != null) {
+    PVector mSelectedMirrorPosition = mSelectedRotatable.get_position();
     noFill();
     stroke(0);
     circle(mSelectedMirrorPosition.x, mSelectedMirrorPosition.y, 4 * rc.vw());
@@ -150,16 +159,16 @@ void draw() {
 }
 
 void handleKeyPressed() {
-  if (mSelectedMirror == null) return;
+  if (mSelectedRotatable == null) return;
 
   if (keyPressed) {
     final float mMirrorRotationStep = TWO_PI / (2.0f * 360.0f); // 0.5° step size
     switch (key) {
     case 'q':
-      mSelectedMirror.set_rotation(mSelectedMirror.get_rotation() + mMirrorRotationStep);
+      mSelectedRotatable.set_rotation(mSelectedRotatable.get_rotation() + mMirrorRotationStep);
       break;
     case 'w':
-      mSelectedMirror.set_rotation(mSelectedMirror.get_rotation() - mMirrorRotationStep);
+      mSelectedRotatable.set_rotation(mSelectedRotatable.get_rotation() - mMirrorRotationStep);
       break;
     }
   }
@@ -177,7 +186,7 @@ void handleKeyPressed() {
 //}
 
 void mousePressed() {
-  mDraggedRotatable = mSelectedMirror;
+  mDraggedRotatable = mSelectedRotatable;
 }
 
 float angle(PVector v1, PVector v2) {
@@ -194,6 +203,16 @@ void fileSelected(File selection) {
   }
 }
 
+void mouseWheel(MouseEvent event) {
+  float factor = 0.1;
+  if (keyCode == SHIFT) factor = 0.001;
+  float e = (float)event.getCount() * factor;
+  if (mSelectedRotatable != null) {
+    mSelectedRotatable.set_rotation_offset(mSelectedRotatable.get_rotation_offset() + e);
+  }
+  println(event.getCount(), factor);
+}
+
 
 void mouseReleased() {
   if (mSelectedRenderable != null && mDraggedRotatable != null && mDraggedRotatable != mSelectedRenderable) {
@@ -207,8 +226,8 @@ void mouseReleased() {
     }
     // dragged from moving head on mirror
     if (mSelectedRenderable instanceof Mirror && mDraggedRotatable instanceof MovingHead) {
-        Mirror m = (Mirror) mSelectedRenderable;
-        m.mIncomingRayDirection = direction.normalize();
+      Mirror m = (Mirror) mSelectedRenderable;
+      m.mReflectionSource = direction.normalize();
     }
     mDraggedRotatable.set_rotation(heading - diff / 2);
   }
@@ -232,10 +251,10 @@ void keyPressed() {
     break;
   case 'I':
     {
-      if (mSelectedMirror == null) break;
+      if (mSelectedRotatable == null) break;
       final int mSign = random(0, 1) > 0.5f ? 1 : -1;
       final float mSpeed = random(PI * 0.1f, PI * 0.5f) * mSign;
-      mSelectedMirror.set_rotation_speed(mSpeed);
+      mSelectedRotatable.set_rotation_speed(mSpeed);
     }
     break;
   case 'S':
@@ -246,8 +265,8 @@ void keyPressed() {
     }
     break;
   case 's':
-    if (mSelectedMirror == null) break;
-    mSelectedMirror.set_rotation_speed(0.0f);
+    if (mSelectedRotatable == null) break;
+    mSelectedRotatable.set_rotation_speed(0.0f);
     break;
   case 'A':
     {

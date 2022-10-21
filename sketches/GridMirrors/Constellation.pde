@@ -18,12 +18,12 @@ static final int layout_height = 5;
 //  "     M   ";
 
 static final String layout =
-  "--M----M--" +
-  "MC-M-M----" +
-  "--MC--CM--" +
-  "----M-M-CM" +
-  "--M----M--";
-  
+  "--M1----M2--" +
+  "M3C1-M4-M5----" +
+  "--M6C2--C3M7--" +
+  "----M8-M9-C4M10" +
+  "--M11----M12--";
+
 //static final String layout =
 //  "---M----M-" +
 //  "-C--M-C--M" +
@@ -39,18 +39,21 @@ static final String layout =
 //  "-X-XMMX--X";
 
 
-static final float mirror_diameter = 0.25f;
+static final float mirror_diameter = 0.19f;
 
- class Constellation {
+class Constellation {
 
-  final ArrayList<Renderable> mMirrors;
+  final ArrayList<Renderable> mRenderables;
   final ArrayList<Renderable> mGrid;
+  final Mirror[] mMirrors = new Mirror[12];
+  final MovingHead[] mLights = new MovingHead[12];
+
   final RenderContext rc;
   float paddingX, paddingY, constellationWidth, constellationHeight;
 
 
-  Constellation(ArrayList<Renderable> mirrors, RenderContext rc) {
-    this.mMirrors = mirrors;
+  Constellation(ArrayList<Renderable> renderables, RenderContext rc) {
+    this.mRenderables = renderables;
     this.mGrid = new ArrayList();
     this.rc = rc;
     update_dimensions();
@@ -58,8 +61,8 @@ static final float mirror_diameter = 0.25f;
   }
 
   public void update_dimensions() {
-    paddingX = 2 * rc.vw();
-    constellationWidth = (100 - 2 * 2) * rc.vw();
+    paddingX = 10 * rc.vw();
+    constellationWidth = (100 - 2 * 10) * rc.vw();
     constellationHeight = constellationWidth * (layout_height / (float) layout_width);
     paddingY = (100 * rc.vh() - constellationHeight) / 2f;
   }
@@ -75,13 +78,29 @@ static final float mirror_diameter = 0.25f;
     return u / ((layout_width - 1) * 3) * (rc.w() - (paddingX * 2));
   }
 
+  void draw(RenderContext rc) {
+    textSize(rc.vw() * 1.5);
+    textAlign(CENTER, CENTER);
+
+    for (int i = 0; i < layout_width; i++) {
+      fill(0);
+      text(i, (i * constellationWidth / (layout_width - 1)) + paddingX, paddingY - 5 * rc.vw());
+    }
+
+    for (int i = 0; i < layout_height; i++) {
+      fill(0);
+      text(i, paddingX - 4 * rc.vw(), (i * constellationHeight / (layout_height - 1)) + paddingY);
+    }
+  }
+
   private void create_from_layout(boolean update) {
-    for (int i = 0; i < layout.length(); i++) {
-      final char c = layout.charAt(i);
+    String[][] matches = matchAll(layout, "-|M(\\d{1,2})|C(\\d{1,2})");
+
+    for (int i = 0; i < matches.length; i++) {
+      final char c = matches[i][0].charAt(0);
       // normalized 0 - 1 coords
       final float x = (i % layout_width) / (float) (layout_width - 1);
       final float y = (i / layout_width) / (float) (layout_height - 1);
-
       //adjust to screen coords
       final PVector pos = new PVector(x * constellationWidth, y * constellationHeight).add(paddingX, paddingY);
       if (update) {
@@ -91,17 +110,27 @@ static final float mirror_diameter = 0.25f;
         }
         update_at_position(i, pos);
       } else if (c == 'M') {
-        add_mirror_at_position(pos);
+        final int id = parseInt(matches[i][1]);
+        Mirror mMirror = new Mirror();
+        mMirror.set_position(pos);
+        mMirror.set_rotation(0);
+        mMirror.set_width(unit_from_meters(mirror_diameter));
+        mMirror.set_both_sides_reflect(true);
+        mRenderables.add(mMirror);
+        mGrid.add(mMirror);
+        mMirrors[id-1] = mMirror;
       } else if (c == 'C') {
+        final int id = parseInt(matches[i][2]);
         MovingHead p = new MovingHead(this);
-        mMirrors.addAll(p.mRays);
+        mRenderables.addAll(p.mRays);
         p.set_position(pos);
-        mMirrors.add(p);
+        mRenderables.add(p);
         mGrid.add(p);
+        mLights[id-1] = p;
       } else if (c == '-' || c == 'X') {
         Pole p = new Pole(c == 'X');
         p.set_position(pos);
-        mMirrors.add(p);
+        mRenderables.add(p);
         mGrid.add(p);
       }
     }
@@ -113,19 +142,14 @@ static final float mirror_diameter = 0.25f;
     mMirror.set_position(position);
   }
 
-  private void add_mirror_at_position(PVector position) {
-    Mirror mMirror = new Mirror();
-    mMirror.set_position(position);
-    mMirror.set_rotation(0);
-    mMirror.set_width(unit_from_meters(mirror_diameter));
-    mMirror.set_both_sides_reflect(true);
-    mMirrors.add(mMirror);
-    mGrid.add(mMirror);
+  public Mirror getMirrorById(int id) {
+    return mMirrors[id - 1];
   }
+
 
   boolean reflect(PVector pRayOrigin, PVector pRayDirection) {
     final ArrayList<Ray> mIntersections = new ArrayList();
-    for (Renderable mRenderable : mMirrors) {
+    for (Renderable mRenderable : mRenderables) {
       if (!(mRenderable instanceof Mirror)) continue;
       final Mirror mMirror = (Mirror)mRenderable;
       final Ray mRay = new Ray(this);

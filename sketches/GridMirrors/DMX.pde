@@ -1,0 +1,53 @@
+
+import java.lang.reflect.Proxy;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+
+static class DMXHandler implements InvocationHandler {
+  Object invoke(Object proxy,
+    Method method,
+    Object[] args)
+    throws Throwable {
+    println(method.getName());
+    if (method.getName() == "pan") {
+        float f = (float)args[0];
+        println(f);
+        return 4;
+    }
+    return new Object();
+  }
+}
+
+static class DMXController {
+  byte[] dmxData = new byte[512];
+  ArtNetClient artnet;
+  Constellation constellation;
+  InvocationHandler handler = new DMXHandler();
+
+  public DMXController (Constellation c) {
+    artnet = new ArtNetClient(null);
+    constellation = c;
+    artnet.start();
+    //Cobra cobra = create(Cobra.class);
+    //cobra.
+  }
+
+  void update() {
+  }
+
+  <T> T create(Class<T> _class) {
+    T f = (T) Proxy.newProxyInstance(_class.getClassLoader(),
+      new Class[] { _class },
+      handler);
+    return f;
+  }
+
+  interface Cobra {
+    /**
+     * This method fromulgates the wibble-wrangler. It should not be called without
+     * first saturating all glashnashers.
+     * @param  number  an absolute URL giving the base location of the image
+     */
+    void pan(float number);
+  }
+}

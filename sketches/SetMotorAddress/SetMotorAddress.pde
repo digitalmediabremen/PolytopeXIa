@@ -8,7 +8,7 @@ void setup() {
   size(400, 400);
 
   printArray(Serial.list());
-  String mPortName = "/dev/tty.usbmodem7133801";//Serial.list()[0];
+  String mPortName = "/dev/tty.usbmodem6550801";//Serial.list()[0];
   MOTOR_SERIAL = new Serial(this, mPortName, 115200);
 }
 

@@ -6,7 +6,9 @@ interface Renderable {
 
 interface Rotatable extends Renderable {
   void set_rotation(float pRotation);
+  void set_rotation_offset(float pRotationOffset);
   float get_rotation();
+  float get_rotation_offset();
   void set_rotation_speed(float pRotationSpeed);
   void update(float pDelta);
 }
@@ -51,11 +53,14 @@ class Mirror implements Renderable, Rotatable {
   final PVector mIntersectionPoint;
   final PVector mReflectedRay;
   final PVector mPosition;
-  float mRotation;
+  float coordX = 0;
+  float coordY = 0;
+  private float mRotation;
   float mWidth;
   float mRotationSpeed;
+  float mRotationOffset;
   boolean mBothSidesReflect = true;
-  PVector mIncomingRayDirection;
+  private PVector mReflectionSource;
 
   Mirror() {
     mPosition = new PVector();
@@ -74,8 +79,8 @@ class Mirror implements Renderable, Rotatable {
     g.noStroke();
 
     g.rect(mPosition.x - 1f * rc.vw(), mPosition.y - 1f * rc.vw(), 2 * rc.vw(), 2 * rc.vw());
-    if (mIncomingRayDirection != null) {
-      g.line(mPosition.x, mPosition.y, mPosition.x + mIncomingRayDirection.x * rc.vw() * 4, mPosition.y + mIncomingRayDirection.y * rc.vw() * 4);
+    if (mReflectionSource != null) {
+      g.line(mPosition.x, mPosition.y, mPosition.x + mReflectionSource.x * rc.vw() * 4, mPosition.y + mReflectionSource.y * rc.vw() * 4);
     }
     draw_triangle(g, mTriangleA);
     draw_triangle(g, mTriangleB);
@@ -87,6 +92,18 @@ class Mirror implements Renderable, Rotatable {
 
   PVector reflected_ray() {
     return mReflectedRay;
+  }
+
+  void setReflectionSourceFromAngle(float angle) {
+    mReflectionSource = PVector.fromAngle(PI + angle);
+    update_triangles();
+  }
+
+  void setReflectionSourceFromCoords(float x, float y) {
+  }
+
+  void removeReflectionSource() {
+    mReflectionSource = null;
   }
 
   void set_both_sides_reflect(boolean pBothSidesReflect) {
@@ -146,8 +163,23 @@ class Mirror implements Renderable, Rotatable {
     update_triangles();
   }
 
+  void set_rotation_offset(float pRotationOffset) {
+    mRotationOffset = pRotationOffset;
+    update_triangles();
+  }
+
   float get_rotation() {
+    if (mReflectionSource != null) {
+      float incoming = angle(mReflectionSource, PVector.fromAngle(PI));
+      //float outgoing = angle(PVector.sub(new PVector(mouseX, mouseY), mPosition), mReflectionSource);
+      return incoming + (mRotation);
+    }
+    //mRotation = angle(PVector.cross(PVector.sub(mPosition, new PVector(mouseX, mouseY)), mIncomingRayDirection), PVector.fromAngle(PI));
     return mRotation;
+  }
+
+  float get_rotation_offset() {
+    return mRotationOffset;
   }
 
   float get_width() {
@@ -162,15 +194,13 @@ class Mirror implements Renderable, Rotatable {
   }
 
   void update(float pDelta) {
-    if (mIncomingRayDirection != null) {
-      float incoming = angle(mIncomingRayDirection, PVector.fromAngle(PI));
-
-      float outgoing = angle(PVector.sub(new PVector(mouseX, mouseY), mPosition), mIncomingRayDirection);
-
-      mRotation = incoming + outgoing * 0.5;
-    }
-    //mRotation = angle(PVector.cross(PVector.sub(mPosition, new PVector(mouseX, mouseY)), mIncomingRayDirection), PVector.fromAngle(PI));
-    update_triangles();
+    //if (mReflectionSource != null) {
+    //  float incoming = angle(mReflectionSource, PVector.fromAngle(PI));
+    //  //float outgoing = angle(PVector.sub(new PVector(mouseX, mouseY), mPosition), mReflectionSource);
+    //  mRotation = incoming + mRotation * 0.5;
+    //}
+    ////mRotation = angle(PVector.cross(PVector.sub(mPosition, new PVector(mouseX, mouseY)), mIncomingRayDirection), PVector.fromAngle(PI));
+    //update_triangles();
     //if (mRotationSpeed != 0) {
     //  mRotation += mRotationSpeed * pDelta;
     //  update_triangles();
@@ -182,7 +212,7 @@ class Mirror implements Renderable, Rotatable {
   }
 
   void update_triangles() {
-    PVector d = new PVector(sin(mRotation), cos(mRotation));
+    PVector d = new PVector(sin(this.get_rotation()), cos(this.get_rotation()));
     PVector.mult(d, mWidth * 0.5f, mTriangleA.p0).add(mPosition);
     PVector.mult(d, mWidth * -0.5f, mTriangleA.p1).add(mPosition);
     /* update 2nd triangle */
