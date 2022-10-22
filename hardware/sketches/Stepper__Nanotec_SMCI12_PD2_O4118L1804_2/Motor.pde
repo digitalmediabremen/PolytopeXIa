@@ -86,14 +86,12 @@ static class MotorController extends Thread {
         state = S.CALIBRATION_STARTED;
       } else if (state == S.CALIBRATION_STARTED) {
         endHoming2();
-        state = S.FOLLOW;
       } else if (state == S.FOLLOW) {
         if (follow()) continue;
       } else if (state == S.ESTOP) {
         cc.sendCommand(MOTOR_CMD_STOP);
         delay(500);
       }
-      delay(MOTOR_DELAY_CMD);
     }
   }
 
@@ -102,6 +100,7 @@ static class MotorController extends Thread {
       motorLoop();
     }
     catch ( CommandTimedOutException e) {
+      println(e);
       println ("motor thread exited because of timeout");
       return;
     }
@@ -137,47 +136,36 @@ static class MotorController extends Thread {
   private void starthoming2() throws CommandTimedOutException {
     for (int i = 0; i < NUM_MOTORS; i++) {
       if (motor_disabled[i]) continue;
-
-      Response r = cc.sendCommand(i + 1, ":is_referenced");
-      println("is referenced", r.value);
-      boolean referenced = r.value == 1;
-      is_motor_referenced[i] = r.value + 1;
-      if (!referenced) {
-        cc.sendCommand(i+1, MOTOR_CMD_STOP, 1);
-        cc.sendCommand(i+1, ":port_in_a", 7);
-        delay(50);
-        // endschalterverhalten setzen
-        // bitmask 0100010000100010 as int is 17442
-        cc.sendCommand(i+1, "l", 17442);
-        println("set position");
-        cc.sendCommand(i+1, "p", 4);  // positionierart setzen 2.6.6
-        cc.sendCommand(i+1, "o", 8000); // 2.6.9 Maximalfrequenz einstellen
-        cc.sendCommand(i+1, "d", 0); // 2.6.14 Drehrichtung einstellen
-        cc.sendCommand(i+1, MOTOR_CMD_START);
-      }
+      if(cc.sendCommand(i + 1, ":is_referenced").value == 1) continue;
+      cc.sendCommand(i+1, MOTOR_CMD_STOP);
+      cc.sendCommand(i+1, "D"); // 2.5.17 Positionsfehler zurücksetzen
+      cc.sendCommand(i+1, ":port_in_a", 7);
+      // endschalterverhalten setzen
+      // bitmask 0100010000100010 as int is 17442
+      cc.sendCommand(i+1, "l", 17442);
+      cc.sendCommand(i+1, "p", 4);  // positionierart setzen 2.6.6
+      cc.sendCommand(i+1, "u", 100); // 2.6.8 Minimalfrequenz einstellen
+      cc.sendCommand(i+1, "d", 0); // 2.6.14 Drehrichtung einstellen
+      cc.sendCommand(i+1, MOTOR_CMD_START);
     }
   }
 
   private void endHoming2() throws CommandTimedOutException {
-    boolean shouldWait = false;
-    for (int i = 0; i < NUM_MOTORS; i++) {
-      if (is_motor_referenced[i] == 1) { // answered but not yet referenced
-        shouldWait = true;
-      }
-    }
-    if (shouldWait) {
-      println("should wait");
-      delay(15000);
-      for (int i = 0; i < NUM_MOTORS; i++) {
-        if (motor_disabled[i]) continue;
 
-        Response r = cc.sendCommand(i + 1, ":is_referenced");
-        println("res", r);
-        is_motor_referenced[i] = r.value + 1;
-        cc.sendCommand(i+1, "p", 2);  // positionierart setzen 2.6.6
-      }
+    println("should wait");
+    boolean all_referenced = true;
+    for (int i = 0; i < NUM_MOTORS; i++) {
+      if (motor_disabled[i]) continue;
+      Response r = cc.sendCommand(i + 1, ":is_referenced");
+      if (r.value == 0) all_referenced = false;
+      else cc.sendCommand(i+1, "p", 2);  // positionierart setzen 2.6.6
+
+      is_motor_referenced[i] = r.value + 1;
     }
-    delay(500);
+    if (all_referenced) {
+      state = S.FOLLOW;
+    }
+    delay(100);
   }
 
   public void delay(int delay) {
@@ -190,6 +178,7 @@ static class MotorController extends Thread {
 
   private boolean follow() throws CommandTimedOutException {
     boolean commandSend = false;
+
     for (int i = 0; i < NUM_MOTORS; i++) {
       if (motor_disabled[i]) continue;
       Response r = cc.sendCommand(i + 1, "C");
@@ -197,6 +186,7 @@ static class MotorController extends Thread {
 
 
       if (current_position_mode[i] != new_position_mode[i]) {
+
         if (new_position_mode[i] == 1) {
           cc.sendCommand(i + 1, MOTOR_CMD_STOP);
           cc.sendCommand(i + 1, "p", 5);
@@ -208,7 +198,6 @@ static class MotorController extends Thread {
           cc.sendCommand(i + 1, MOTOR_CMD_STOP);
           cc.sendCommand(i + 1, "p", 2);
           cc.sendCommand(i + 1, "o", 1000); // 2.6.9 Maximalfrequenz einstellen
-          delay(50);
           Response rr = cc.sendCommand(i + 1, "C");
           current_motor_positions[i] = ( rr.value % STEPS_FULL_ROTATION) / (float)STEPS_FULL_ROTATION;
           cc.sendCommand(i + 1, "D", rr.value % STEPS_FULL_ROTATION); // 2.5.17 Positionsfehler zurücksetzen
@@ -221,7 +210,6 @@ static class MotorController extends Thread {
         //if (is_motor_referenced[i] != 2) continue;
 
         if (new_values[i] != current_motor_positions[i]) {
-          print(i);
           commandSend = true;
           //println("position from, to", current_motor_positions[i] * 360, new_motor_positions[i] * 360);
           float clipped_new_motor_position = Math.max(-1, Math.min(1, new_values[i]));
@@ -290,7 +278,7 @@ static class MotorController extends Thread {
         //sendCom mand("|", 1); // 2.6.4 Aktuellen Satz auslesen
         cc.sendCommand(i, "p", 2); // 2.6.6 Positionierart setzen
         cc.sendCommand(i, "s", 0); // 2.6.7 Verfahrweg einstellen **HOW TO DEACTIVATE THIS? with `W`**
-        cc.sendCommand(i, "u", 1); // 2.6.8 Minimalfrequenz einstellen
+        cc.sendCommand(i, "u", 2000); // 2.6.8 Minimalfrequenz einstellen
         cc.sendCommand(i, "o", 4000); // 2.6.9 Maximalfrequenz einstellen
         cc.sendCommand(i, "b", 6000); // 2.6.11 Beschleunigungsrampe einstellen
         cc.sendCommand(i, "B", 6000); // 2.6.12 Bremsrampe einstellen
@@ -300,7 +288,6 @@ static class MotorController extends Thread {
         cc.sendCommand(i, "H", 0); // 2.6.13 Halterampe einstellen
         cc.sendCommand(i, "d", 0); // 2.6.14 Drehrichtung einstellen
         cc.sendCommand(i, "t", 0); // 2.6.15 Richtungsumkehr einstellen
-        cc.sendCommand(i, "p", 2);  // positionierart setzen 2.6.6
       }
       catch (CommandTimedOutException e) {
         println(e);

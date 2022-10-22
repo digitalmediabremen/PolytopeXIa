@@ -16,7 +16,8 @@ static class OSCController {
 
 
   float mapAngle(float a) {
-    if (a < 0) a += TWO_PI;
+    if (a < -360) a += 360;
+    if (a > 360) a -= 360;
     return a;
   }
 
@@ -25,9 +26,7 @@ static class OSCController {
 
       OscMessage msg = new OscMessage("/motor/position");
       float a = degrees(constellation.mMirrors[i].get_rotation() + constellation.mMirrors[i].get_rotation_offset());
-      a = a % 360;
-      a = mapAngle(a);
-      a = (360 - a) % 360;
+      a = mapAngle(a * -1);
       if (a != old[i]) {
         msg.add(i+1);
         msg.add(a);
@@ -41,30 +40,12 @@ static class OSCController {
   void oscEvent(OscMessage msg) {
     /* check if theOscMessage has the address pattern we are looking for. */
 
-    if (msg.checkAddrPattern("/mirror/offset")) {
+    if (msg.checkAddrPattern("/composition")) {
       /* check if the typetag is the right one. */
-      if (msg.checkTypetag("if")) {
-        int id = msg.get(0).intValue();
-        float angle = msg.get(1).floatValue();
-        Mirror m = constellation.getMirrorById(id);
-        m.set_rotation_offset(radians(angle));
+      if (msg.checkTypetag("s")) {
+        String compositionString = msg.get(0).stringValue();
+        constellation.loadConstellation(compositionString);
       }
-    } else if (msg.checkAddrPattern("/mirror/rotation/angle")) {
-      if (msg.checkTypetag("if")) {
-        int id = msg.get(0).intValue();
-        float angle = msg.get(1).floatValue();
-        Mirror m = constellation.getMirrorById(id);
-        m.set_rotation(radians(angle));
-      }
-    } else if (msg.checkAddrPattern("/mirror/reflect/enable")) {
-      if (msg.checkTypetag("if")) {
-        int id = msg.get(0).intValue();
-        float angle = msg.get(1).floatValue();
-        Mirror m = constellation.getMirrorById(id);
-        m.setReflectionSourceFromAngle(radians(angle));
-      }
-    } else {
-      System.out.println(msg);
     }
   }
 }

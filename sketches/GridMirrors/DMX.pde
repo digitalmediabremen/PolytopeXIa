@@ -25,6 +25,7 @@ static class DMXController {
   InvocationHandler handler = new DMXHandler();
   final int[] DMX_PAN_CHANNELS = {200, 250, 300, 350};
   final int[] DMX_TILT_CHANNELS = {202, 252, 302, 352};
+  boolean disabled = true;
 
   public DMXController (Constellation c) {
     artnet = new ArtNetClient(null);
@@ -45,6 +46,7 @@ static class DMXController {
   }
 
   void update() {
+    if (disabled) return;
     for (int i = 0; i < 4; i++) {
       float rotation = constellation.mLights[i].get_rotation();
       float rotation_offset = constellation.mLights[i].get_rotation_offset();

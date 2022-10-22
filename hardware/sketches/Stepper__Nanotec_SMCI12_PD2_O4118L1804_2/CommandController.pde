@@ -85,7 +85,7 @@ static class Response {
   }
 
   public static Response parse(String commandString) throws ResponseParseException {
-    String[] matches = match(commandString, "(\\d{1,2}|\\*)([A-Za-z]|:[A-Za-z_]+)([0-9+-]+)?");
+    String[] matches = match(commandString, "(\\d{1,2}|\\*)([A-Za-z]|:[A-Za-z_]+)([0-9+-.]+)?");
     if (matches == null) throw new ResponseParseException(commandString);
     int id = parseInt(matches[1]);
     String c = matches[2];
@@ -118,7 +118,7 @@ interface CommandHandler {
 }
 
 static class CommandController {
-  private final int RETRY_COUNT = 1;
+  private final int RETRY_COUNT = 3;
   private final Serial MOTOR_SERIAL;
   MotorController mc;
   Response commandResponse;
@@ -170,7 +170,7 @@ static class CommandController {
       } else if (commandResponse != null) {
         println("didnt match", command, commandResponse);
       }
-      mc.delay(1);
+      mc.delay(2);
     }
   }
 

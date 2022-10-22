@@ -1,6 +1,6 @@
 
-final static int num_rays = 12;
-static class MovingHead implements Rotatable {
+final static int num_rays = 1;
+class MovingHead implements Rotatable {
   final PVector mPosition;
   float mRotation;
   float mRotationSpeed;
@@ -14,7 +14,6 @@ static class MovingHead implements Rotatable {
     mRotationSpeed = 0.0f;
     mRays = new ArrayList();
     initRays(c);
-    ArtNetClient artnet = new ArtNetClient();
   }
 
   private void initRays(Constellation c) {
@@ -28,7 +27,8 @@ static class MovingHead implements Rotatable {
   private void updateRays() {
     for (int i = 0; i < num_rays; i++) {
       final Ray ray = mRays.get(i);
-      final float direction_offset = map(i, 0, num_rays, radians(-0.3f), radians(0.3f));
+      float direction_offset = map(i, 0, num_rays, radians(-0.3f), radians(0.3f));
+      direction_offset = 0;
       ray.origin.set(mPosition);
       ray.direction.set(sin(get_rotation() + direction_offset + HALF_PI), cos(get_rotation() + direction_offset + HALF_PI)).mult(20);
     }
@@ -60,8 +60,19 @@ static class MovingHead implements Rotatable {
     return mTiltOffset;
   }
 
+  float angle(PVector v1, PVector v2) {
+    float a = atan2(v2.y, v2.x) - atan2(v1.y, v1.x);
+    if (a < 0) a += TWO_PI;
+    return a;
+  }
+
 
   void update(float pDelta) {
+    //PVector mouse = new PVector(mouseX, mouseY);
+    //PVector direction = PVector.sub(this.get_position(), mouse);
+    //float heading = angle(direction, PVector.fromAngle(PI));
+    //mRotation = heading;
+    //updateRays();
     //if (mRotationSpeed != 0) {
     //  mRotation += mRotationSpeed * pDelta;
     //  updateRays();

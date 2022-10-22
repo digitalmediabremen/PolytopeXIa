@@ -8,6 +8,7 @@ static class Ray implements Renderable {
   }
 
   void draw(RenderContext rc) {
+    //return;
     rc.g().noFill();
     rc.g().stroke(255,0,0);
     line_to(rc.g(), origin, direction);

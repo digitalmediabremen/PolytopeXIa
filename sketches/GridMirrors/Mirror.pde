@@ -61,6 +61,7 @@ class Mirror implements Renderable, Rotatable {
   float mRotationOffset;
   boolean mBothSidesReflect = true;
   private PVector mReflectionSource;
+  float sourceAngle;
 
   Mirror() {
     mPosition = new PVector();
@@ -84,11 +85,6 @@ class Mirror implements Renderable, Rotatable {
     }
     draw_triangle(g, mTriangleA);
     draw_triangle(g, mTriangleB);
-    PVector angle = PVector.fromAngle(mRotation - HALF_PI);
-    stroke(255,0,0);
-    g.line(mPosition.x, mPosition.y, mPosition.x + mTriangleA.normal.x * rc.vw() * 8, mPosition.y + mTriangleA.normal.y * rc.vw() * 8);
-
-
   }
 
   PVector intersection_point() {
@@ -174,13 +170,13 @@ class Mirror implements Renderable, Rotatable {
   }
 
   float get_rotation() {
-    if (mReflectionSource != null) {
-      float diff = mRotation - angle(mReflectionSource, PVector.fromAngle(PI));
-      float a = mRotation - diff / 2 + HALF_PI;
-      if (mRotation < PI) a += PI;
+    if (sourceAngle != -1) {
+      float diff = (PI + mRotation) - sourceAngle;
+      float a = mRotation - diff / 2;
+      if (diff > PI) a += PI;
       return mapAngle(a);
     }
-    return mRotation;
+    return mapAngle(mRotation);
   }
 
   float get_rotation_offset() {
@@ -247,7 +243,7 @@ class Mirror implements Renderable, Rotatable {
   void draw_triangle(PGraphics g, Triangle pTriangle) {
     g.pushStyle();
     PVector mMidPoint = PVector.add(pTriangle.p0, pTriangle.p1).mult(0.5f);
-    line_to(g, mMidPoint, PVector.mult(pTriangle.normal, 10));
+    line_to(g, mMidPoint, PVector.mult(pTriangle.normal, 40));
     line(g, pTriangle.p0, pTriangle.p1);
     line(g, pTriangle.p1, pTriangle.p2);
     line(g, pTriangle.p2, pTriangle.p0);

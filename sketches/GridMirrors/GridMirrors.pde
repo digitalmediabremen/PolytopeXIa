@@ -132,6 +132,9 @@ void draw() {
     }
   }
 
+  text("DMX " + (dmxController.disabled ? "0" : "1"), 20, 40);
+
+
 
   for (Renderable mRenderables : mMirrors) {
     mRenderables.draw(rc);
@@ -210,7 +213,7 @@ float angle(PVector v1, PVector v2) {
 
 float mapAngle(float a) {
   if (a < 0) a += TWO_PI;
-  return a;
+  return a % TWO_PI;
 }
 
 void fileSelected(File selection) {
@@ -237,9 +240,6 @@ void mouseWheel(MouseEvent event) {
       mSelectedRotatable.set_rotation_offset(mSelectedRotatable.get_rotation_offset() + e);
     }
   }
-
-
-  println(event.getCount(), factor);
 }
 
 
@@ -252,6 +252,7 @@ void mouseReleased() {
     if (mSelectedRenderable instanceof Mirror && mDraggedRotatable instanceof Rotatable) {
       Mirror m = (Mirror) mSelectedRenderable;
       m.mReflectionSource = direction.normalize();
+      m.sourceAngle = heading;
     }
     mDraggedRotatable.set_rotation(heading);
   }
@@ -265,7 +266,6 @@ void keyReleased() {
 }
 
 void keyPressed() {
-  println(key);
   if (key < 256) pressedKeys[key] = true;
   switch (key) {
   case '0':
@@ -281,56 +281,17 @@ void keyPressed() {
       }
       break;
     }
-  case 'R':
+  case 'D':
     {
-      for (Renderable mRenderable : mMirrors) {
-        if (!(mRenderable instanceof Rotatable)) continue;
-        final Rotatable mMirror = (Rotatable)mRenderable;
-        final int mSign = random(0, 1) > 0.5f ? 1 : -1;
-        final float mSpeed = random(PI * 0.01f, PI * 0.1f) * mSign;
-        mMirror.set_rotation_speed(mSpeed);
-      }
+      dmxController.disabled = !dmxController.disabled;
+      break;
     }
-    break;
-  case 'I':
-    {
-      if (mSelectedRotatable == null) break;
-      final int mSign = random(0, 1) > 0.5f ? 1 : -1;
-      final float mSpeed = random(PI * 0.1f, PI * 0.5f) * mSign;
-      mSelectedRotatable.set_rotation_speed(mSpeed);
-    }
-    break;
+
   case 'S':
-    for (Renderable mRenderable : mMirrors) {
-      if (!(mRenderable instanceof Rotatable)) continue;
-      final Rotatable mMirror = (Rotatable)mRenderable;
-      mMirror.set_rotation_speed(0);
-    }
-    break;
-  case 's':
-    if (mSelectedRotatable == null) break;
-    mSelectedRotatable.set_rotation_speed(0.0f);
-    break;
-  case 'A':
     {
-      final int mSign = random(0, 1) > 0.5f ? 1 : -1;
-      final float mSpeed = random(PI * 0.01f, PI * 0.1f) * mSign;
-      for (Renderable mRenderable : mMirrors) {
-        if (!(mRenderable instanceof Rotatable)) continue;
-        final Rotatable mMirror = (Rotatable)mRenderable;
-        mMirror.set_rotation_speed(mSpeed);
-      }
+      mConstellation.printConstellation();
+      break;
     }
-    break;
-  case 'X':
-    {
-      for (Renderable mRenderable : mMirrors) {
-        if (!(mRenderable instanceof Rotatable)) continue;
-        final Rotatable mMirror = (Rotatable)mRenderable;
-        mMirror.set_rotation(PI / 4);
-      }
-    }
-    break;
   }
 }
 

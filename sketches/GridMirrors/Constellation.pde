@@ -1,6 +1,6 @@
-
+import java.util.Arrays;
 static final int layout_width = 10;
-static final int layout_height = 5;
+static final int layout_height = 7;
 //static final String layout =
 //  "    M    " +
 //  "  MC CM  " +
@@ -18,13 +18,13 @@ static final int layout_height = 5;
 //  "     M   ";
 
 static final String layout =
-  "------------" +
+  "----------" +
   "--M1----M2--" +
   "M3C1-M4-M5----" +
   "--M6C2--C3M7--" +
   "----M8-M9-C4M10" +
   "--M11----M12--" +
-  "------------";
+  "----------";
 
 
 //static final String layout =
@@ -67,7 +67,6 @@ class Constellation {
   public void update_dimensions() {
     paddingX = 10 * rc.vw();
     constellationWidth = (100 - 2 * 10) * rc.vw();
-    println("with", (layout_height - 1) / (float) (layout_width - 1));
     constellationHeight = constellationWidth * ((layout_height - 1) / (float) (layout_width -1));
     paddingY = (100 * rc.vh() - constellationHeight) / 2f;
   }
@@ -123,6 +122,44 @@ class Constellation {
     println("values loaded");
   }
 
+  public void printConstellation() {
+    String[] s = new String[24 + 12];
+    for (int i = 0; i < 12; i++) {
+      s[i * 2] = str(mMirrors[i].mRotation);
+      s[i * 2 + 1] = str(mMirrors[i].sourceAngle);
+    }
+    for (int i = 0; i < 4; i++) {
+      s[i + 24] = str(mLights[i].get_rotation());
+      s[i + 24 + 4] = str(mLights[i].get_rotation_offset());
+      s[i + 24 + 8] = str(mLights[i].get_tilt_offset());
+    }
+
+    //println(Base64.getEncoder().encodeToString(LitheString.zip(Arrays.toString(s))));
+    println(Arrays.toString(s));
+  }
+
+  public void loadConstellation(String source) {
+    String[] s;
+    try {
+      s = source.split(",");
+    }
+    catch (Exception e) {
+      println(e);
+      return;
+    }
+    for (int i = 0; i < 12; i++) {
+      mMirrors[i].mRotation = float(s[i * 2]);
+      mMirrors[i].sourceAngle = float(s[i * 2 + 1]);
+      mMirrors[i].update_triangles();
+    }
+    for (int i = 0; i < 4; i++) {
+      mLights[i].mRotation = float(s[i + 24]);
+      mLights[i].mRotationOffset = float(s[i + 24 + 4]);
+      mLights[i].mTiltOffset = float(s[i + 24 + 8]);
+      mLights[i].updateRays();
+    }
+  }
+
   private void create_from_layout(boolean update) {
     String[][] matches = matchAll(layout, "-|M(\\d{1,2})|C(\\d{1,2})");
 
@@ -131,7 +168,6 @@ class Constellation {
       // normalized 0 - 1 coords
       final float x = (i % layout_width) / (float) (layout_width - 1);
       final float y = (i / layout_width) / (float) (layout_height - 1);
-      println(x, y);
       //adjust to screen coords
       final PVector pos = new PVector(x * constellationWidth, y * constellationHeight).add(paddingX, paddingY);
       if (update) {
