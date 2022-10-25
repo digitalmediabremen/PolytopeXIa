@@ -1,12 +1,14 @@
 interface Renderable {
-  public void draw(PGraphics g);
+  public void draw(RenderContext rc);
   public PVector get_position();
   public void set_position(PVector position);
 }
 
 interface Rotatable extends Renderable {
   void set_rotation(float pRotation);
+  void set_rotation_offset(float pRotationOffset);
   float get_rotation();
+  float get_rotation_offset();
   void set_rotation_speed(float pRotationSpeed);
   void update(float pDelta);
 }
@@ -19,18 +21,21 @@ static class Triangle {
   final PVector p2 = new PVector();
 }
 
-class Pole implements Renderable {
+static class Pole implements Renderable {
   final PVector mPosition;
+  final boolean mBlocked;
 
-  Pole() {
+  Pole(boolean blocked) {
     mPosition = new PVector();
+    mBlocked = blocked;
   }
 
-  void draw(PGraphics g) {
+  void draw(RenderContext rc) {
     //g.rect(mPosition.x - 5, mPosition.y- 5, 10,10);
-    g.fill(200, 200, 200);
-    g.noStroke();
-    g.rect(mPosition.x - .5f * vw, mPosition.y - .5f * vw, 1 * vw, 1 * vw);
+    if (mBlocked) rc.g().fill(100, 100, 100);
+    else rc.g().fill(200, 200, 200);
+    rc.g().noStroke();
+    rc.g().rect(mPosition.x - .5f * rc.vw(), mPosition.y - .5f * rc.vw(), 1 * rc.vw(), 1 * rc.vw());
   }
 
   void set_position(PVector pPosition) {
@@ -48,10 +53,14 @@ class Mirror implements Renderable, Rotatable {
   final PVector mIntersectionPoint;
   final PVector mReflectedRay;
   final PVector mPosition;
-  float mRotation;
+  float coordX = 0;
+  float coordY = 0;
+  private float mRotation;
   float mWidth;
   float mRotationSpeed;
+  float mRotationOffset;
   boolean mBothSidesReflect = true;
+  private PVector mReflectionSource;
 
   Mirror() {
     mPosition = new PVector();
@@ -64,13 +73,22 @@ class Mirror implements Renderable, Rotatable {
     mIntersectionPoint = new PVector();
   }
 
-  void draw(PGraphics g) {
+  void draw(RenderContext rc) {
+    final PGraphics g = rc.g();
     g.fill(255, 0, 255, 100);
     g.noStroke();
-    
-    g.rect(mPosition.x - 1f * vw, mPosition.y - 1f * vw, 2 * vw, 2 * vw);
+
+    g.rect(mPosition.x - 1f * rc.vw(), mPosition.y - 1f * rc.vw(), 2 * rc.vw(), 2 * rc.vw());
+    if (mReflectionSource != null) {
+      g.line(mPosition.x, mPosition.y, mPosition.x + mReflectionSource.x * rc.vw() * 4, mPosition.y + mReflectionSource.y * rc.vw() * 4);
+    }
     draw_triangle(g, mTriangleA);
     draw_triangle(g, mTriangleB);
+    PVector angle = PVector.fromAngle(mRotation - HALF_PI);
+    stroke(255,0,0);
+    g.line(mPosition.x, mPosition.y, mPosition.x + mTriangleA.normal.x * rc.vw() * 8, mPosition.y + mTriangleA.normal.y * rc.vw() * 8);
+
+
   }
 
   PVector intersection_point() {
@@ -79,6 +97,18 @@ class Mirror implements Renderable, Rotatable {
 
   PVector reflected_ray() {
     return mReflectedRay;
+  }
+
+  void setReflectionSourceFromAngle(float angle) {
+    mReflectionSource = PVector.fromAngle(angle - PI);
+    update_triangles();
+  }
+
+  void setReflectionSourceFromCoords(float x, float y) {
+  }
+
+  void removeReflectionSource() {
+    mReflectionSource = null;
   }
 
   void set_both_sides_reflect(boolean pBothSidesReflect) {
@@ -138,19 +168,48 @@ class Mirror implements Renderable, Rotatable {
     update_triangles();
   }
 
+  void set_rotation_offset(float pRotationOffset) {
+    mRotationOffset = pRotationOffset;
+    update_triangles();
+  }
+
   float get_rotation() {
+    if (mReflectionSource != null) {
+      float diff = mRotation - angle(mReflectionSource, PVector.fromAngle(PI));
+      float a = mRotation - diff / 2 + HALF_PI;
+      if (mRotation < PI || diff < PI) a += PI;
+      return mapAngle(a);
+    }
     return mRotation;
+  }
+
+  float get_rotation_offset() {
+    return mRotationOffset;
   }
 
   float get_width() {
     return mWidth;
   }
 
+
+  float angle(PVector v1, PVector v2) {
+    float a = atan2(v2.y, v2.x) - atan2(v1.y, v1.x);
+    if (a < 0) a += TWO_PI;
+    return a;
+  }
+
   void update(float pDelta) {
-    if (mRotationSpeed != 0) {
-      mRotation += mRotationSpeed * pDelta;
-      update_triangles();
-    }
+    //if (mReflectionSource != null) {
+    //  float incoming = angle(mReflectionSource, PVector.fromAngle(PI));
+    //  //float outgoing = angle(PVector.sub(new PVector(mouseX, mouseY), mPosition), mReflectionSource);
+    //  mRotation = incoming + mRotation * 0.5;
+    //}
+    ////mRotation = angle(PVector.cross(PVector.sub(mPosition, new PVector(mouseX, mouseY)), mIncomingRayDirection), PVector.fromAngle(PI));
+    //update_triangles();
+    //if (mRotationSpeed != 0) {
+    //  mRotation += mRotationSpeed * pDelta;
+    //  update_triangles();
+    //}
   }
 
   void set_rotation_speed(float pRotationSpeed) {
@@ -158,7 +217,7 @@ class Mirror implements Renderable, Rotatable {
   }
 
   void update_triangles() {
-    PVector d = new PVector(sin(mRotation), cos(mRotation));
+    PVector d = new PVector(sin(this.get_rotation()), cos(this.get_rotation()));
     PVector.mult(d, mWidth * 0.5f, mTriangleA.p0).add(mPosition);
     PVector.mult(d, mWidth * -0.5f, mTriangleA.p1).add(mPosition);
     /* update 2nd triangle */

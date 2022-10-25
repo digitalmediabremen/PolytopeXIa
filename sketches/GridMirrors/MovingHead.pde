@@ -1,8 +1,11 @@
-final static int num_rays = 12;
-class MovingHead implements Rotatable {
+
+final static int num_rays = 1;
+static class MovingHead implements Rotatable {
   final PVector mPosition;
   float mRotation;
   float mRotationSpeed;
+  float mRotationOffset = PI;
+  float mTiltOffset = 0;
   final ArrayList<Ray> mRays;
 
   MovingHead(Constellation c) {
@@ -11,6 +14,7 @@ class MovingHead implements Rotatable {
     mRotationSpeed = 0.0f;
     mRays = new ArrayList();
     initRays(c);
+    ArtNetClient artnet = new ArtNetClient();
   }
 
   private void initRays(Constellation c) {
@@ -24,12 +28,12 @@ class MovingHead implements Rotatable {
   private void updateRays() {
     for (int i = 0; i < num_rays; i++) {
       final Ray ray = mRays.get(i);
-      final float direction_offset = map(i, 0, num_rays, radians(-0.3f), radians(0.3f)); 
+      final float direction_offset = map(i, 0, num_rays, radians(-0.3f), radians(0.3f));
       ray.origin.set(mPosition);
-      ray.direction.set(sin(mRotation + direction_offset + HALF_PI), cos(mRotation + direction_offset + HALF_PI)).mult(20);
+      ray.direction.set(sin(get_rotation() + direction_offset + HALF_PI), cos(get_rotation() + direction_offset + HALF_PI)).mult(20);
     }
   }
-  
+
   void set_rotation(float pRotation) {
     mRotation = pRotation;
     updateRays();
@@ -39,32 +43,51 @@ class MovingHead implements Rotatable {
     return mRotation;
   }
 
+  void set_tilt_offset(float pTiltOffset) {
+    mTiltOffset = pTiltOffset;
+  }
+
+  void set_rotation_offset(float pRotationOffset) {
+    mRotationOffset = pRotationOffset;
+    updateRays();
+  }
+
+  float get_rotation_offset() {
+    return mRotationOffset;
+  }
+
+  float get_tilt_offset() {
+    return mTiltOffset;
+  }
+
+
   void update(float pDelta) {
-    if (mRotationSpeed != 0) {
-      mRotation += mRotationSpeed * pDelta;
-      updateRays();
-    }
+    //if (mRotationSpeed != 0) {
+    //  mRotation += mRotationSpeed * pDelta;
+    //  updateRays();
+    //}
   }
 
   void set_rotation_speed(float pRotationSpeed) {
     mRotationSpeed = pRotationSpeed;
   }
 
-  void draw(PGraphics g) {
-    final PVector d = new PVector(sin(mRotation + HALF_PI), cos(mRotation + HALF_PI));
+  void draw(RenderContext rc) {
+    final PGraphics g = rc.g();
+    final PVector d = new PVector(sin(get_rotation() + HALF_PI), cos(get_rotation() + HALF_PI));
     final PVector p = PVector.mult(d, 20 * 0.5f).add(mPosition);
     g.pushMatrix();
- 
+
     g.stroke(0);
     g.noFill();
     g.translate(mPosition.x, mPosition.y);
-    g.stroke(0,180,0);
-    g.fill(0,180,0,20);
-    g.circle(0,0,4 * vw);
+    g.stroke(0, 180, 0);
+    g.fill(0, 180, 0, 20);
+    g.circle(0, 0, 4 * rc.vw());
     g.stroke(0);
     g.noFill();
-    g.rotate(-mRotation);
-    g.rect(0 - vw, 0 - .5f * vw, 2 * vw, vw);
+    g.rotate(-get_rotation());
+    g.rect(0 - rc.vw(), 0 - .5f * rc.vw(), 2 * rc.vw(), rc.vw());
     g.popMatrix();
     //g.line(mPosition.x, mPosition.y, p.x, p.y);
   }
