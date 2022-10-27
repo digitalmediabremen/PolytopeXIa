@@ -1,17 +1,19 @@
-import processing.serial.*;
 import java.util.Arrays;
+import processing.core.PApplet;
+import static processing.core.PApplet.println;
+import processing.serial.*;
 
+public class MotorController extends Thread {
+  private float[] set_motor_positions;
+  private float[] set_motor_rotation_speed;
 
-static class MotorController extends Thread {
-  private float[] current_motor_positions;
-  private float[] current_motor_rotation_speed;
-
-  private int[] measured_motor_positions;
+  private int[] current_motor_positions;
   private float[] new_values;
-  private int[] is_motor_referenced;
-  private int[] current_position_mode;
-  private int[] new_position_mode;
+  private boolean[] is_motor_referenced;
+  private PositionMode[] current_position_mode;
+  private PositionMode[] new_position_mode;
   private boolean[] motor_disabled;
+
   private CommandController cc;
 
 
@@ -48,10 +50,10 @@ static class MotorController extends Thread {
 
   public static final int VEZER_FPS = 32;
 
-  public float motor_position_mode_max_speed = 0.5; // umdrehung pro sekunde
-  public float motor_rotation_mode_max_speed = 0.2; // umdrehung pro sekunde
+  public float motor_position_mode_max_speed = 0.5f; // umdrehung pro sekunde
+  public float motor_rotation_mode_max_speed = 0.2f; // umdrehung pro sekunde
 
-  public static enum S {
+  private static enum S {
     INIT,
       SETUP,
       CALIBRATION,
@@ -59,24 +61,28 @@ static class MotorController extends Thread {
       FOLLOW,
       ESTOP
   }
+  
+  public static enum PositionMode {
+    NOT_SET, CONTINOUS_ROTATION, ABSOLUTE_POSITION
+  }
 
   private S state = S.SETUP;
 
   public MotorController(PApplet instance, String serialPortName, int num_motors) {
     cc = new CommandController(instance, this, serialPortName);
     NUM_MOTORS = num_motors;
-    current_motor_positions = new float[num_motors];
-    current_motor_rotation_speed = new float[num_motors];
+    set_motor_positions = new float[num_motors];
+    set_motor_rotation_speed = new float[num_motors];
     new_values = new float[num_motors];
-    measured_motor_positions = new int[num_motors];
-    is_motor_referenced = new int[num_motors];
-    current_position_mode = new int[num_motors];
-    new_position_mode = new int[num_motors];
+    current_motor_positions = new int[num_motors];
+    is_motor_referenced = new boolean[num_motors];
+    current_position_mode = new PositionMode[num_motors];
+    new_position_mode = new PositionMode[num_motors];
     motor_disabled = new boolean[num_motors];
-    Arrays.fill(new_position_mode, -1);
+    Arrays.fill(new_position_mode, PositionMode.NOT_SET);
   }
 
-  private void motorLoop() throws CommandTimedOutException {
+  private void motorLoop() throws CommandController.CommandTimedOutException {
     while (true) {
       if (state == S.SETUP) {
         sendDefaults();
@@ -99,9 +105,9 @@ static class MotorController extends Thread {
     try {
       motorLoop();
     }
-    catch ( CommandTimedOutException e) {
+    catch ( CommandController.CommandTimedOutException e) {
       println(e);
-      println ("motor thread exited because of timeout");
+      println("Motor thread exited because of timeout");
       return;
     }
   }
@@ -123,9 +129,8 @@ static class MotorController extends Thread {
     new_values[motorId - 1] = position;
   }
 
-  public void setMotorPositionMode(int motorId, int mode) {
+  public void setMotorPositionMode(int motorId, PositionMode mode) {
     if (motorId == 0 || motorId > NUM_MOTORS) return;
-    if (mode < 0 || mode > 1) return;
     new_position_mode[motorId - 1] = mode;
   }
 
@@ -133,10 +138,11 @@ static class MotorController extends Thread {
     return state;
   }
 
-  private void starthoming2() throws CommandTimedOutException {
+  private void starthoming2() throws CommandController.CommandTimedOutException {
     for (int i = 0; i < NUM_MOTORS; i++) {
       if (motor_disabled[i]) continue;
-      if(cc.sendCommand(i + 1, ":is_referenced").value == 1) continue;
+      boolean isMotorReferenced = cc.sendCommand(i + 1, ":is_referenced") == 1;
+      if (isMotorReferenced) continue;
       cc.sendCommand(i+1, MOTOR_CMD_STOP);
       cc.sendCommand(i+1, "D"); // 2.5.17 Positionsfehler zurücksetzen
       cc.sendCommand(i+1, ":port_in_a", 7);
@@ -150,17 +156,14 @@ static class MotorController extends Thread {
     }
   }
 
-  private void endHoming2() throws CommandTimedOutException {
-
-    println("should wait");
+  private void endHoming2() throws CommandController.CommandTimedOutException {
     boolean all_referenced = true;
     for (int i = 0; i < NUM_MOTORS; i++) {
       if (motor_disabled[i]) continue;
-      Response r = cc.sendCommand(i + 1, ":is_referenced");
-      if (r.value == 0) all_referenced = false;
+      boolean isMotorReferenced = cc.sendCommand(i + 1, ":is_referenced") == 1;
+      if (!isMotorReferenced) all_referenced = false;
       else cc.sendCommand(i+1, "p", 2);  // positionierart setzen 2.6.6
-
-      is_motor_referenced[i] = r.value + 1;
+      is_motor_referenced[i] = isMotorReferenced;
     }
     if (all_referenced) {
       state = S.FOLLOW;
@@ -176,45 +179,45 @@ static class MotorController extends Thread {
     }
   }
 
-  private boolean follow() throws CommandTimedOutException {
+  private boolean follow() throws CommandController.CommandTimedOutException {
     boolean commandSend = false;
 
     for (int i = 0; i < NUM_MOTORS; i++) {
       if (motor_disabled[i]) continue;
-      Response r = cc.sendCommand(i + 1, "C");
-      measured_motor_positions[i] = r.value;
 
+      // update motor position
+      current_motor_positions[i] = cc.sendCommand(i + 1, "C");
 
       if (current_position_mode[i] != new_position_mode[i]) {
 
-        if (new_position_mode[i] == 1) {
+        if (new_position_mode[i] == PositionMode.CONTINOUS_ROTATION) {
           cc.sendCommand(i + 1, MOTOR_CMD_STOP);
           cc.sendCommand(i + 1, "p", 5);
           cc.sendCommand(i + 1, "o", 10); // 2.6.9 Maximalfrequenz einstellen
-          current_motor_rotation_speed[i] = 0;
+          set_motor_rotation_speed[i] = 0;
           cc.sendCommand(i + 1, MOTOR_CMD_START);
-          current_position_mode[i] = 1;
-        } else if (new_position_mode[i] == 0) {
+          current_position_mode[i] = PositionMode.CONTINOUS_ROTATION;
+        } else if (new_position_mode[i] == PositionMode.ABSOLUTE_POSITION) {
           cc.sendCommand(i + 1, MOTOR_CMD_STOP);
           cc.sendCommand(i + 1, "p", 2);
           cc.sendCommand(i + 1, "o", 1000); // 2.6.9 Maximalfrequenz einstellen
-          Response rr = cc.sendCommand(i + 1, "C");
-          current_motor_positions[i] = ( rr.value % STEPS_FULL_ROTATION) / (float)STEPS_FULL_ROTATION;
-          cc.sendCommand(i + 1, "D", rr.value % STEPS_FULL_ROTATION); // 2.5.17 Positionsfehler zurücksetzen
-          current_position_mode[i] = 0;
+          int currentMotorPosition = cc.sendCommand(i + 1, "C");
+          set_motor_positions[i] = ( currentMotorPosition % STEPS_FULL_ROTATION) / (float)STEPS_FULL_ROTATION;
+          cc.sendCommand(i + 1, "D", currentMotorPosition % STEPS_FULL_ROTATION); // 2.5.17 Positionsfehler zurücksetzen
+          current_position_mode[i] = PositionMode.ABSOLUTE_POSITION;
         }
       }
 
-      if (current_position_mode[i] == 0) {
+      if (current_position_mode[i] == PositionMode.ABSOLUTE_POSITION) {
         // rotate event
         //if (is_motor_referenced[i] != 2) continue;
 
-        if (new_values[i] != current_motor_positions[i]) {
+        if (new_values[i] != set_motor_positions[i]) {
           commandSend = true;
-          //println("position from, to", current_motor_positions[i] * 360, new_motor_positions[i] * 360);
+          //println("position from, to", set_motor_positions[i] * 360, new_motor_positions[i] * 360);
           float clipped_new_motor_position = Math.max(-1, Math.min(1, new_values[i]));
-          float motor_position_difference = clipped_new_motor_position - current_motor_positions[i];
-          float motor_speed_rev_per_second = Math.abs(motor_position_difference * 0.5) * motor_position_mode_max_speed;
+          float motor_position_difference = clipped_new_motor_position - set_motor_positions[i];
+          float motor_speed_rev_per_second = Math.abs(motor_position_difference * 0.5f) * motor_position_mode_max_speed;
           float motor_max_speed_hz = MICRO_STEPS * 16000;
           int motor_speed = Math.round(motor_speed_rev_per_second * motor_max_speed_hz);
 
@@ -222,19 +225,19 @@ static class MotorController extends Thread {
           cc.sendCommand(i + 1, "o", motor_speed); // 2.6.9 Maximalfrequenz einstellen
           cc.sendCommand(i + 1, "s", motor_position_steps);
           cc.sendCommand(i + 1, MOTOR_CMD_START);
-          current_motor_positions[i] = clipped_new_motor_position;
+          set_motor_positions[i] = clipped_new_motor_position;
         }
-      } else if (current_position_mode[i] == 1) {
-        if (new_values[i] != current_motor_rotation_speed[i]) {
+      } else if (current_position_mode[i] == PositionMode.CONTINOUS_ROTATION) {
+        if (new_values[i] != set_motor_rotation_speed[i]) {
           commandSend = true;
-          //println("position from, to", current_motor_positions[i] * 360, new_motor_positions[i] * 360);
+          //println("position from, to", set_motor_positions[i] * 360, new_motor_positions[i] * 360);
           float clipped_new_value = Math.max(-1, Math.min(1, new_values[i]));
-          float motor_speed_rev_per_second = Math.abs(clipped_new_value * 0.5) * motor_rotation_mode_max_speed;
+          float motor_speed_rev_per_second = Math.abs(clipped_new_value * 0.5f) * motor_rotation_mode_max_speed;
           float motor_max_speed_hz = MICRO_STEPS * 16000;
           int motor_speed = Math.round(motor_speed_rev_per_second * motor_max_speed_hz);
           cc.sendCommand(i+1, "d", clipped_new_value > 0 ? 1 : 0); // 2.6.14 Drehrichtung einstellen
           cc.sendCommand(i + 1, "o", motor_speed); // 2.6.9 Maximalfrequenz einstellen
-          current_motor_rotation_speed[i] = new_values[i];
+          set_motor_rotation_speed[i] = new_values[i];
         }
       }
     }
@@ -289,7 +292,7 @@ static class MotorController extends Thread {
         cc.sendCommand(i, "d", 0); // 2.6.14 Drehrichtung einstellen
         cc.sendCommand(i, "t", 0); // 2.6.15 Richtungsumkehr einstellen
       }
-      catch (CommandTimedOutException e) {
+      catch (CommandController.CommandTimedOutException e) {
         println(e);
         motor_disabled[i - 1] = true;
       }
@@ -297,9 +300,34 @@ static class MotorController extends Thread {
       delay(100);
     }
   }
-}
-MotorController createMotorController(String portName, int numMotors) {
-  MotorController mc = new MotorController(this, portName, numMotors);
-  new Thread(mc).start();
-  return mc;
+
+  public boolean isMotorReferenced(int motorId) {
+    return is_motor_referenced[motorId];
+  }
+
+  public boolean isMotorDisabled(int motorId) {
+    return motor_disabled[motorId];
+  }
+
+  public float getCurrentMotorPosition(int motorId) {
+        return current_motor_positions[motorId];
+  }
+  
+  public float getPlannedMotorPosition(int motorId) {
+    return set_motor_positions[motorId];
+  }
+  
+  public PositionMode getCurrentPositionMode(int motorId) {
+    return current_position_mode[motorId];
+  }
+  
+  public void forwardSerialEvent(Serial s) {
+    this.cc.serialEvent(s);
+  }
+
+  public static MotorController createInstance(PApplet instance, String portName, int numMotors) {
+    MotorController mc = new MotorController(instance, portName, numMotors);
+    new Thread(mc).start();
+    return mc;
+  }
 }

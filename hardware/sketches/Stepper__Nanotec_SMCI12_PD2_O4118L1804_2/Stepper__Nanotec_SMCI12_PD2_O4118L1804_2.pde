@@ -1,6 +1,7 @@
 import netP5.*;
 import oscP5.*;
 import controlP5.*;
+import processing.serial.*;
 
 
 OscP5 oscP5;
@@ -16,9 +17,6 @@ void setup() {
   size(1024, 400);
 
   oscP5 = new OscP5(this, 8000);
-
-  printArray(Serial.list());
-
   cp5 = new ControlP5(this);
 
 
@@ -33,8 +31,9 @@ void setup() {
     .setSize(width / 2, 20)
     .setRange(0, 0.05)
     ;
-
-  mc = createMotorController("/dev/tty.usbmodem6550801", 12);
+    
+  CommandController.listSerialDevices();
+  mc = MotorController.createInstance(this, "/dev/tty.usbmodem6550801", 12);
 }
 
 void oscEvent(OscMessage msg) {
@@ -46,7 +45,7 @@ void oscEvent(OscMessage msg) {
       int motor_id = msg.get(0).intValue();
       /* parse theOscMessage and extract the values from the osc message arguments. */
       float new_motor_position = msg.get(1).floatValue() / 360f;
-      mc.setMotorPositionMode(motor_id, 0);
+      mc.setMotorPositionMode(motor_id, MotorController.PositionMode.ABSOLUTE_POSITION);
       mc.setMotorPosition(motor_id, new_motor_position);
       return;
     }
@@ -65,7 +64,7 @@ void oscEvent(OscMessage msg) {
       int motor_id = msg.get(0).intValue();
       /* parse theOscMessage and extract the values from the osc message arguments. */
       float new_motor_position = msg.get(1).floatValue() / 360f;
-      mc.setMotorPositionMode(motor_id, 1);
+      mc.setMotorPositionMode(motor_id, MotorController.PositionMode.CONTINOUS_ROTATION);
       mc.setMotorPosition(motor_id, new_motor_position);
       return;
     }
@@ -101,16 +100,16 @@ void draw() {
   rectMode(CENTER);
 
   for (int i = 0; i < mc.NUM_MOTORS; i++) {
-    color c = mc.is_motor_referenced[i] == 2 ? color(0, 255, 0) : !mc.motor_disabled[i] ? color(255, 255, 255): color(255, 0, 0);
+    color c = mc.isMotorReferenced(i) ? color(0, 255, 0) : !mc.isMotorDisabled(i) ? color(255, 255, 255): color(255, 0, 0);
     float x = map(i, 0, mc.NUM_MOTORS - 1, xp, width - xp);
-    float v = map(mc.measured_motor_positions[i], -MotorController.STEPS_FULL_ROTATION, MotorController.STEPS_FULL_ROTATION, -TWO_PI, +TWO_PI);
-    float v2 = map(mc.current_motor_positions[i], -1, +1, -TWO_PI, +TWO_PI);
+    float v = map(mc.getCurrentMotorPosition(i), -MotorController.STEPS_FULL_ROTATION, MotorController.STEPS_FULL_ROTATION, -TWO_PI, +TWO_PI);
+    float v2 = map(mc.getPlannedMotorPosition(i), -1, +1, -TWO_PI, +TWO_PI);
     fill(c);
     noStroke();
     circle(x, ys, 10);
     fill(255);
     text("M" + (i + 1), x, yt);
-    text(mc.current_position_mode[i] == 0 ? "POS" : "ROT", x, ypm);
+    text(mc.getCurrentPositionMode(i) == MotorController.PositionMode.ABSOLUTE_POSITION ? "POS" : "ROT", x, ypm);
 
     float _x = cos(v) * 20;
     float _y = sin(v) * 20;
@@ -120,7 +119,7 @@ void draw() {
     stroke(0);
     circle(x, y, 40);
     strokeWeight(3);
-    if (mc.current_position_mode[i] != 1) {
+    if (mc.getCurrentPositionMode(i) != MotorController.PositionMode.CONTINOUS_ROTATION) {
       stroke(150);
       line(x, y, x + _x2, y + _y2);
     }
@@ -144,18 +143,9 @@ void keyPressed() {
     //sendCo mmand(compileCommand("C")); // 2.5.20 Position auslesen
     break;
   }
-
-  //switch(keyCode) {
-  //case DOWN:
-  //  println();
-  //  print("### reset EEPROM … ");
-  //  sendCommand(compileCommand(MOTOR_CMD_EEPROM_RESET));
-  //  delay(2000);
-  //  println("DONE");
-  //  break;
-  //}
 }
 
+// this is a hack as classes cant register to listen for serial events through the registerCommand interface.
 public void serialEvent(Serial MOTOR_SERIAL) {
-  mc.cc.serialEvent(MOTOR_SERIAL);
+  mc.forwardSerialEvent(MOTOR_SERIAL);
 }
